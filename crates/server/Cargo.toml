@@ -1,0 +1,32 @@
+[package]
+name = "ogap-server"
+description = "Game server (sessions, deadlines, WebSocket transport) for the Open Game Agent Platform"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+axum.workspace = true
+futures-util.workspace = true
+ogap-eventlog.workspace = true
+ogap-game-core.workspace = true
+ogap-protocol.workspace = true
+rand.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+ogap-connect4.workspace = true
+ogap-tictactoe.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
+tokio-tungstenite.workspace = true
+
+[lints]
+workspace = true

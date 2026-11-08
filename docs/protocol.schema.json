@@ -1,0 +1,991 @@
+{
+  "client_message": {
+    "$defs": {
+      "ApiKey": {
+        "description": "A developer API key (hosted mode). `Debug` is redacted.",
+        "type": "string"
+      },
+      "BotInfo": {
+        "description": "How a bot identifies itself.",
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/BotName",
+            "description": "Self-declared name."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/BotVersion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional self-declared version."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "BotName": {
+        "description": "A self-declared bot name, e.g. `\"Power Grid Strategist\"`.",
+        "type": "string"
+      },
+      "BotVersion": {
+        "description": "A self-declared bot version, e.g. `\"2.3.1\"`.",
+        "type": "string"
+      },
+      "DecisionId": {
+        "description": "Monotonic per-game decision counter. Every `decide` message carries a new\none; actions must echo it, which makes stale or duplicate actions\ndetectable.",
+        "format": "uint64",
+        "minimum": 0,
+        "type": "integer"
+      },
+      "GameId": {
+        "description": "Unique identifier of a game session (UUIDv7, so ids sort by creation time).",
+        "format": "uuid",
+        "type": "string"
+      },
+      "ObservationMode": {
+        "description": "What each `decide` message contains.",
+        "oneOf": [
+          {
+            "const": "state",
+            "description": "The player-specific observation only.",
+            "type": "string"
+          },
+          {
+            "const": "state_and_legal",
+            "description": "The observation plus the list of currently legal actions.",
+            "type": "string"
+          }
+        ]
+      },
+      "ResumeToken": {
+        "description": "Secret that lets a bot reclaim its seat after a disconnect.\n\n`Debug` is redacted so tokens do not end up in logs.",
+        "type": "string"
+      },
+      "SeatCount": {
+        "description": "Number of seats in a game: `1..=MAX_SEATS`.",
+        "format": "uint8",
+        "maximum": 255,
+        "minimum": 0,
+        "type": "integer"
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "Messages sent by bots.",
+    "oneOf": [
+      {
+        "description": "First message on every connection.",
+        "properties": {
+          "api_key": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ApiKey"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Developer API key; required in hosted mode, ignored in standalone."
+          },
+          "bot": {
+            "$ref": "#/$defs/BotInfo",
+            "description": "Self-declared identity."
+          },
+          "protocol": {
+            "description": "Protocol version the bot speaks; must equal [`PROTOCOL_VERSION`].",
+            "format": "uint32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "const": "hello",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "protocol",
+          "bot"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Creates a lobby game that bots can `join` by id.",
+        "properties": {
+          "config": {
+            "description": "Game configuration; defaults to the canonical ruleset."
+          },
+          "game": {
+            "description": "Game id, e.g. `\"connect4\"`.",
+            "type": "string"
+          },
+          "observation_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ObservationMode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Observation mode; defaults to the server setting."
+          },
+          "seats": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/SeatCount"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Seat count; defaults to the game's minimum."
+          },
+          "think_time_ms": {
+            "description": "Think time per decision; defaults to the server setting.",
+            "format": "uint64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "type": {
+            "const": "create_game",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Takes a seat in a lobby game.",
+        "properties": {
+          "game_id": {
+            "$ref": "#/$defs/GameId",
+            "description": "The game to join."
+          },
+          "type": {
+            "const": "join",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game_id"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Enters the quick-match queue for a game.",
+        "properties": {
+          "config": {
+            "description": "Game configuration; only bots asking for the same configuration\nare matched together."
+          },
+          "game": {
+            "description": "Game id, e.g. `\"tictactoe\"`.",
+            "type": "string"
+          },
+          "seats": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/SeatCount"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Seat count; defaults to the game's minimum."
+          },
+          "type": {
+            "const": "queue",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Leaves the quick-match queue.",
+        "properties": {
+          "type": {
+            "const": "leave_queue",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Responds to a `decide`.",
+        "properties": {
+          "action": {
+            "description": "Game-specific action payload."
+          },
+          "decision_id": {
+            "$ref": "#/$defs/DecisionId",
+            "description": "Must match the pending decision."
+          },
+          "game_id": {
+            "$ref": "#/$defs/GameId",
+            "description": "The game."
+          },
+          "type": {
+            "const": "action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game_id",
+          "decision_id",
+          "action"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Reclaims a seat after a disconnect.",
+        "properties": {
+          "game_id": {
+            "$ref": "#/$defs/GameId",
+            "description": "The game."
+          },
+          "resume_token": {
+            "$ref": "#/$defs/ResumeToken",
+            "description": "Token received in `game_start`."
+          },
+          "type": {
+            "const": "reconnect",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game_id",
+          "resume_token"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Liveness check.",
+        "properties": {
+          "nonce": {
+            "description": "Echoed back in `pong`.",
+            "format": "uint64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "type": {
+            "const": "ping",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      }
+    ],
+    "title": "ClientMessage"
+  },
+  "protocol_version": 1,
+  "server_message": {
+    "$defs": {
+      "BotInfo": {
+        "description": "How a bot identifies itself.",
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/BotName",
+            "description": "Self-declared name."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/BotVersion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional self-declared version."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "BotName": {
+        "description": "A self-declared bot name, e.g. `\"Power Grid Strategist\"`.",
+        "type": "string"
+      },
+      "BotVersion": {
+        "description": "A self-declared bot version, e.g. `\"2.3.1\"`.",
+        "type": "string"
+      },
+      "DecisionId": {
+        "description": "Monotonic per-game decision counter. Every `decide` message carries a new\none; actions must echo it, which makes stale or duplicate actions\ndetectable.",
+        "format": "uint64",
+        "minimum": 0,
+        "type": "integer"
+      },
+      "ErrorCode": {
+        "description": "Connection-level error codes.",
+        "oneOf": [
+          {
+            "const": "protocol_version",
+            "description": "The bot's protocol version is not supported.",
+            "type": "string"
+          },
+          {
+            "const": "malformed",
+            "description": "The frame is not a valid message.",
+            "type": "string"
+          },
+          {
+            "const": "unexpected_message",
+            "description": "The message is valid but not allowed in the current state.",
+            "type": "string"
+          },
+          {
+            "const": "hello_required",
+            "description": "`hello` must be the first message.",
+            "type": "string"
+          },
+          {
+            "const": "auth_required",
+            "description": "Authentication is required or failed.",
+            "type": "string"
+          },
+          {
+            "const": "unknown_game",
+            "description": "No game type with that id exists.",
+            "type": "string"
+          },
+          {
+            "const": "no_such_game",
+            "description": "No game session with that id exists.",
+            "type": "string"
+          },
+          {
+            "const": "game_full",
+            "description": "The lobby is full or already started.",
+            "type": "string"
+          },
+          {
+            "const": "invalid_config",
+            "description": "The configuration, seat count or settings were rejected.",
+            "type": "string"
+          },
+          {
+            "const": "invalid_resume",
+            "description": "The resume token does not match any seat in the game.",
+            "type": "string"
+          },
+          {
+            "const": "superseded",
+            "description": "The seat was taken over by a newer connection.",
+            "type": "string"
+          },
+          {
+            "const": "rate_limited",
+            "description": "Too many messages.",
+            "type": "string"
+          },
+          {
+            "const": "message_too_large",
+            "description": "Frame larger than the advertised limit.",
+            "type": "string"
+          },
+          {
+            "const": "server_busy",
+            "description": "The server is at capacity.",
+            "type": "string"
+          },
+          {
+            "const": "internal",
+            "description": "Something went wrong on the server.",
+            "type": "string"
+          }
+        ]
+      },
+      "ForfeitReason": {
+        "description": "Why a seat forfeited.",
+        "oneOf": [
+          {
+            "const": "timeout",
+            "description": "The decision deadline expired.",
+            "type": "string"
+          },
+          {
+            "const": "disconnected",
+            "description": "The bot stayed disconnected past the reconnect grace period.",
+            "type": "string"
+          },
+          {
+            "const": "invalid_action",
+            "description": "An in-process agent failed to produce a legal action (simulation only;\nnetworked bots may retry until the deadline instead).",
+            "type": "string"
+          }
+        ]
+      },
+      "GameId": {
+        "description": "Unique identifier of a game session (UUIDv7, so ids sort by creation time).",
+        "format": "uuid",
+        "type": "string"
+      },
+      "GameResult": {
+        "description": "Platform-level result of a game.\n\nWraps the engine's [`Outcome`] and adds results the engine knows nothing\nabout (forfeits, aborts). Scores are type-erased JSON at this level.",
+        "oneOf": [
+          {
+            "description": "The game ran to completion under its rules.",
+            "properties": {
+              "kind": {
+                "const": "completed",
+                "type": "string"
+              },
+              "ranks": {
+                "description": "Per-seat ranks.",
+                "items": {
+                  "$ref": "#/$defs/Rank"
+                },
+                "type": "array"
+              },
+              "scores": {
+                "description": "Game-specific score detail."
+              }
+            },
+            "required": [
+              "kind",
+              "ranks",
+              "scores"
+            ],
+            "type": "object"
+          },
+          {
+            "description": "The game ended early because a seat forfeited.",
+            "properties": {
+              "kind": {
+                "const": "forfeited",
+                "type": "string"
+              },
+              "ranks": {
+                "description": "Per-seat ranks after applying the forfeit policy.",
+                "items": {
+                  "$ref": "#/$defs/Rank"
+                },
+                "type": "array"
+              },
+              "reason": {
+                "$ref": "#/$defs/ForfeitReason",
+                "description": "Why it forfeited."
+              },
+              "seat": {
+                "$ref": "#/$defs/Seat",
+                "description": "The seat that forfeited (ranked last)."
+              }
+            },
+            "required": [
+              "kind",
+              "seat",
+              "reason",
+              "ranks"
+            ],
+            "type": "object"
+          },
+          {
+            "description": "The game ended without a result (e.g. internal error, lobby expired).",
+            "properties": {
+              "kind": {
+                "const": "aborted",
+                "type": "string"
+              },
+              "reason": {
+                "description": "Human-readable reason.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "reason"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "Limits": {
+        "description": "Server limits announced in `welcome`.",
+        "properties": {
+          "max_message_bytes": {
+            "description": "Largest accepted frame, in bytes.",
+            "format": "uint32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "max_messages_per_second": {
+            "description": "Sustained message rate allowed per connection.",
+            "format": "uint32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_message_bytes",
+          "max_messages_per_second"
+        ],
+        "type": "object"
+      },
+      "ObservationMode": {
+        "description": "What each `decide` message contains.",
+        "oneOf": [
+          {
+            "const": "state",
+            "description": "The player-specific observation only.",
+            "type": "string"
+          },
+          {
+            "const": "state_and_legal",
+            "description": "The observation plus the list of currently legal actions.",
+            "type": "string"
+          }
+        ]
+      },
+      "PlayerSlot": {
+        "description": "One seat at the table, as announced in `game_start`.",
+        "properties": {
+          "bot": {
+            "$ref": "#/$defs/BotInfo",
+            "description": "The bot occupying it."
+          },
+          "seat": {
+            "$ref": "#/$defs/Seat",
+            "description": "The seat."
+          }
+        },
+        "required": [
+          "seat",
+          "bot"
+        ],
+        "type": "object"
+      },
+      "Rank": {
+        "description": "A finishing position: 1 is best. Ties share a rank.\n\nRanks follow *standard competition ranking* (\"1224\"): a seat's rank is one\nplus the number of seats that finished strictly ahead of it.",
+        "format": "uint8",
+        "maximum": 255,
+        "minimum": 0,
+        "type": "integer"
+      },
+      "RejectCode": {
+        "description": "Why an action was rejected.",
+        "oneOf": [
+          {
+            "const": "illegal_action",
+            "description": "The action violates the game rules.",
+            "type": "string"
+          },
+          {
+            "const": "malformed_action",
+            "description": "The action payload does not match the game's action format.",
+            "type": "string"
+          },
+          {
+            "const": "not_your_turn",
+            "description": "It is not this seat's turn.",
+            "type": "string"
+          },
+          {
+            "const": "stale_decision",
+            "description": "`decision_id` does not match the pending decision.",
+            "type": "string"
+          },
+          {
+            "const": "game_finished",
+            "description": "The game is over.",
+            "type": "string"
+          }
+        ]
+      },
+      "ResumeToken": {
+        "description": "Secret that lets a bot reclaim its seat after a disconnect.\n\n`Debug` is redacted so tokens do not end up in logs.",
+        "type": "string"
+      },
+      "Seat": {
+        "description": "A zero-based seat at the table. Always `< MAX_SEATS`.",
+        "format": "uint8",
+        "maximum": 255,
+        "minimum": 0,
+        "type": "integer"
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "Messages sent by the server.",
+    "oneOf": [
+      {
+        "description": "Reply to `hello`.",
+        "properties": {
+          "limits": {
+            "$ref": "#/$defs/Limits",
+            "description": "Server limits."
+          },
+          "protocol": {
+            "description": "Protocol version spoken by the server.",
+            "format": "uint32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "server_version": {
+            "description": "Server software version.",
+            "type": "string"
+          },
+          "type": {
+            "const": "welcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "protocol",
+          "server_version",
+          "limits"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Reply to `create_game`.",
+        "properties": {
+          "game_id": {
+            "$ref": "#/$defs/GameId",
+            "description": "Id to `join`."
+          },
+          "type": {
+            "const": "game_created",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game_id"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Seat taken in a lobby that is still filling up.",
+        "properties": {
+          "game_id": {
+            "$ref": "#/$defs/GameId",
+            "description": "The game."
+          },
+          "seats_filled": {
+            "description": "Seats filled so far.",
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "seats_total": {
+            "description": "Seats needed to start.",
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "const": "joined",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game_id",
+          "seats_filled",
+          "seats_total"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Waiting in the quick-match queue.",
+        "properties": {
+          "game": {
+            "description": "Game id.",
+            "type": "string"
+          },
+          "type": {
+            "const": "queued",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "The game has started (also re-sent after a successful reconnect).",
+        "properties": {
+          "config": {
+            "description": "Canonical configuration in effect."
+          },
+          "engine_version": {
+            "description": "Exact engine version.",
+            "type": "string"
+          },
+          "game": {
+            "description": "Game type id.",
+            "type": "string"
+          },
+          "game_id": {
+            "$ref": "#/$defs/GameId",
+            "description": "The game."
+          },
+          "observation_mode": {
+            "$ref": "#/$defs/ObservationMode",
+            "description": "What `decide` messages contain."
+          },
+          "players": {
+            "description": "Everyone at the table.",
+            "items": {
+              "$ref": "#/$defs/PlayerSlot"
+            },
+            "type": "array"
+          },
+          "resume_token": {
+            "$ref": "#/$defs/ResumeToken",
+            "description": "Secret for `reconnect`."
+          },
+          "ruleset": {
+            "description": "Base ruleset id.",
+            "type": "string"
+          },
+          "seat": {
+            "$ref": "#/$defs/Seat",
+            "description": "Your seat."
+          },
+          "think_time_ms": {
+            "description": "Think time per decision.",
+            "format": "uint64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "const": "game_start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game_id",
+          "game",
+          "engine_version",
+          "ruleset",
+          "config",
+          "seat",
+          "players",
+          "resume_token",
+          "observation_mode",
+          "think_time_ms"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Your turn: respond with exactly one `action` before the deadline.",
+        "properties": {
+          "decision_id": {
+            "$ref": "#/$defs/DecisionId",
+            "description": "Echo this in your action."
+          },
+          "game_id": {
+            "$ref": "#/$defs/GameId",
+            "description": "The game."
+          },
+          "legal_actions": {
+            "description": "Legal actions (only in `state_and_legal` mode).",
+            "items": true,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "observation": {
+            "description": "Your complete, self-contained observation."
+          },
+          "remaining_ms": {
+            "description": "Milliseconds left on the decision clock, measured by the server.",
+            "format": "uint64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "const": "decide",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game_id",
+          "decision_id",
+          "remaining_ms",
+          "observation"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "The action was applied.",
+        "properties": {
+          "decision_id": {
+            "$ref": "#/$defs/DecisionId",
+            "description": "The decision it answered."
+          },
+          "game_id": {
+            "$ref": "#/$defs/GameId",
+            "description": "The game."
+          },
+          "type": {
+            "const": "action_accepted",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game_id",
+          "decision_id"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "The action was rejected; you may retry within the remaining time.",
+        "properties": {
+          "code": {
+            "$ref": "#/$defs/RejectCode",
+            "description": "Machine-readable reason."
+          },
+          "decision_id": {
+            "$ref": "#/$defs/DecisionId",
+            "description": "The decision it answered."
+          },
+          "game_id": {
+            "$ref": "#/$defs/GameId",
+            "description": "The game."
+          },
+          "message": {
+            "description": "Human-readable explanation.",
+            "type": "string"
+          },
+          "remaining_ms": {
+            "description": "Milliseconds left on the (unchanged) decision clock.",
+            "format": "uint64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "const": "action_rejected",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game_id",
+          "decision_id",
+          "code",
+          "message",
+          "remaining_ms"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "The game is over.",
+        "properties": {
+          "game_id": {
+            "$ref": "#/$defs/GameId",
+            "description": "The game."
+          },
+          "observation": {
+            "description": "Your final observation."
+          },
+          "result": {
+            "$ref": "#/$defs/GameResult",
+            "description": "Final result."
+          },
+          "type": {
+            "const": "game_over",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "game_id",
+          "result",
+          "observation"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "A connection-level error. If `fatal`, the server closes the socket.",
+        "properties": {
+          "code": {
+            "$ref": "#/$defs/ErrorCode",
+            "description": "Machine-readable code."
+          },
+          "fatal": {
+            "description": "Whether the connection will be closed.",
+            "type": "boolean"
+          },
+          "message": {
+            "description": "Human-readable explanation.",
+            "type": "string"
+          },
+          "type": {
+            "const": "error",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message",
+          "fatal"
+        ],
+        "type": "object"
+      },
+      {
+        "description": "Reply to `ping`.",
+        "properties": {
+          "nonce": {
+            "description": "The nonce from `ping`.",
+            "format": "uint64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "type": {
+            "const": "pong",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      }
+    ],
+    "title": "ServerMessage"
+  }
+}

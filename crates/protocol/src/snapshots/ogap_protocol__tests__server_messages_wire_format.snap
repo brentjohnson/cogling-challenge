@@ -1,0 +1,125 @@
+---
+source: crates/protocol/src/lib.rs
+expression: frames
+---
+[
+  {
+    "limits": {
+      "max_message_bytes": 65536,
+      "max_messages_per_second": 50
+    },
+    "protocol": 1,
+    "server_version": "0.1.0",
+    "type": "welcome"
+  },
+  {
+    "game_id": "0192f6a0-0000-7000-8000-000000000001",
+    "type": "game_created"
+  },
+  {
+    "game_id": "0192f6a0-0000-7000-8000-000000000001",
+    "seats_filled": 1,
+    "seats_total": 2,
+    "type": "joined"
+  },
+  {
+    "game": "tictactoe",
+    "type": "queued"
+  },
+  {
+    "config": {
+      "first_seat": 0
+    },
+    "engine_version": "0.1.0",
+    "game": "tictactoe",
+    "game_id": "0192f6a0-0000-7000-8000-000000000001",
+    "observation_mode": "state_and_legal",
+    "players": [
+      {
+        "bot": {
+          "name": "Power Grid Strategist",
+          "version": "2.3.1"
+        },
+        "seat": 0
+      },
+      {
+        "bot": {
+          "name": "random"
+        },
+        "seat": 1
+      }
+    ],
+    "resume_token": "s3cret",
+    "ruleset": "standard",
+    "seat": 0,
+    "think_time_ms": 1000,
+    "type": "game_start"
+  },
+  {
+    "decision_id": 1,
+    "game_id": "0192f6a0-0000-7000-8000-000000000001",
+    "legal_actions": [
+      {
+        "cell": 0
+      },
+      {
+        "cell": 1
+      }
+    ],
+    "observation": {
+      "board": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "mark": "X",
+      "seat": 0,
+      "to_move": 0
+    },
+    "remaining_ms": 1000,
+    "type": "decide"
+  },
+  {
+    "decision_id": 1,
+    "game_id": "0192f6a0-0000-7000-8000-000000000001",
+    "type": "action_accepted"
+  },
+  {
+    "code": "illegal_action",
+    "decision_id": 1,
+    "game_id": "0192f6a0-0000-7000-8000-000000000001",
+    "message": "cell 4 is already taken by X",
+    "remaining_ms": 640,
+    "type": "action_rejected"
+  },
+  {
+    "game_id": "0192f6a0-0000-7000-8000-000000000001",
+    "observation": {},
+    "result": {
+      "kind": "forfeited",
+      "ranks": [
+        1,
+        2
+      ],
+      "reason": "timeout",
+      "seat": 1
+    },
+    "type": "game_over"
+  },
+  {
+    "code": "malformed",
+    "fatal": false,
+    "message": "expected value at line 1",
+    "type": "error"
+  },
+  {
+    "nonce": 1,
+    "type": "pong"
+  }
+]

@@ -1,0 +1,21 @@
+[package]
+name = "ogap-game-core"
+description = "Game-engine contract, deterministic RNG, outcomes and conformance kit for the Open Game Agent Platform"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+## Derive `schemars::JsonSchema` for wire-visible types (used to generate the protocol schema).
+schema = ["dep:schemars"]
+
+[dependencies]
+schemars = { workspace = true, optional = true }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

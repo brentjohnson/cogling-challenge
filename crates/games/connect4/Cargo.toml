@@ -1,0 +1,19 @@
+[package]
+name = "ogap-connect4"
+description = "Connect Four engine for the Open Game Agent Platform"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+ogap-game-core.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

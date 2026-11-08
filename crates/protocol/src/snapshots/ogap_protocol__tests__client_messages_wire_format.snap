@@ -1,0 +1,52 @@
+---
+source: crates/protocol/src/lib.rs
+expression: frames
+---
+[
+  {
+    "bot": {
+      "name": "Power Grid Strategist",
+      "version": "2.3.1"
+    },
+    "protocol": 1,
+    "type": "hello"
+  },
+  {
+    "config": {
+      "first_seat": 1
+    },
+    "game": "connect4",
+    "observation_mode": "state",
+    "seats": 2,
+    "think_time_ms": 500,
+    "type": "create_game"
+  },
+  {
+    "game_id": "0192f6a0-0000-7000-8000-000000000001",
+    "type": "join"
+  },
+  {
+    "game": "tictactoe",
+    "type": "queue"
+  },
+  {
+    "type": "leave_queue"
+  },
+  {
+    "action": {
+      "cell": 4
+    },
+    "decision_id": 7,
+    "game_id": "0192f6a0-0000-7000-8000-000000000001",
+    "type": "action"
+  },
+  {
+    "game_id": "0192f6a0-0000-7000-8000-000000000001",
+    "resume_token": "s3cret",
+    "type": "reconnect"
+  },
+  {
+    "nonce": 1,
+    "type": "ping"
+  }
+]
