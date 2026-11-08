@@ -4,7 +4,7 @@ expression: frames
 ---
 [
   {
-    "bot": {
+    "cogling": {
       "name": "Strategist",
       "version": "2.3.1"
     },

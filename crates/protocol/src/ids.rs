@@ -86,7 +86,7 @@ impl fmt::Display for DecisionId {
     }
 }
 
-/// Secret that lets a bot reclaim its seat after a disconnect.
+/// Secret that lets a cogling reclaim its seat after a disconnect.
 ///
 /// `Debug` is redacted so tokens do not end up in logs.
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
@@ -136,40 +136,42 @@ impl fmt::Debug for ApiKey {
     }
 }
 
-/// A rejected bot name or version.
+/// A rejected cogling name or version.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[non_exhaustive]
-pub enum BotInfoError {
-    /// The bot name is empty, too long, padded with whitespace or contains
+pub enum CoglingInfoError {
+    /// The cogling name is empty, too long, padded with whitespace or contains
     /// control characters.
-    #[error("bot name must be 1-{max} characters without control characters or surrounding whitespace", max = BotName::MAX_LEN)]
+    #[error("cogling name must be 1-{max} characters without control characters or surrounding whitespace", max = CoglingName::MAX_LEN)]
     InvalidName,
     /// The version contains characters outside `[A-Za-z0-9.+_-]` or is too long.
-    #[error("bot version must be 1-{max} characters from [A-Za-z0-9.+_-]", max = BotVersion::MAX_LEN)]
+    #[error("cogling version must be 1-{max} characters from [A-Za-z0-9.+_-]", max = CoglingVersion::MAX_LEN)]
     InvalidVersion,
 }
 
-/// A self-declared bot name, e.g. `"Strategist"`.
+/// A self-declared cogling name, e.g. `"Strategist"`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(try_from = "String", into = "String")]
-pub struct BotName(String);
+pub struct CoglingName(String);
 
-impl BotName {
+impl CoglingName {
     /// Maximum length in characters.
     pub const MAX_LEN: usize = 64;
 
-    /// Validates a bot name.
+    /// Validates a cogling name.
     ///
     /// # Errors
     ///
-    /// [`BotInfoError::InvalidName`].
-    pub fn new(name: impl Into<String>) -> Result<Self, BotInfoError> {
+    /// [`CoglingInfoError::InvalidName`].
+    pub fn new(name: impl Into<String>) -> Result<Self, CoglingInfoError> {
         let name = name.into();
         let len = name.chars().count();
         let valid = (1..=Self::MAX_LEN).contains(&len)
             && name.trim() == name
             && !name.chars().any(char::is_control);
-        valid.then_some(Self(name)).ok_or(BotInfoError::InvalidName)
+        valid
+            .then_some(Self(name))
+            .ok_or(CoglingInfoError::InvalidName)
     }
 
     /// The name text.
@@ -179,31 +181,31 @@ impl BotName {
     }
 }
 
-impl TryFrom<String> for BotName {
-    type Error = BotInfoError;
+impl TryFrom<String> for CoglingName {
+    type Error = CoglingInfoError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::new(value)
     }
 }
 
-impl From<BotName> for String {
-    fn from(name: BotName) -> Self {
+impl From<CoglingName> for String {
+    fn from(name: CoglingName) -> Self {
         name.0
     }
 }
 
-impl fmt::Display for BotName {
+impl fmt::Display for CoglingName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
     }
 }
 
-/// A self-declared bot version, e.g. `"2.3.1"`.
+/// A self-declared cogling version, e.g. `"2.3.1"`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(try_from = "String", into = "String")]
-pub struct BotVersion(String);
+pub struct CoglingVersion(String);
 
-impl BotVersion {
+impl CoglingVersion {
     /// Maximum length in characters.
     pub const MAX_LEN: usize = 32;
 
@@ -211,8 +213,8 @@ impl BotVersion {
     ///
     /// # Errors
     ///
-    /// [`BotInfoError::InvalidVersion`].
-    pub fn new(version: impl Into<String>) -> Result<Self, BotInfoError> {
+    /// [`CoglingInfoError::InvalidVersion`].
+    pub fn new(version: impl Into<String>) -> Result<Self, CoglingInfoError> {
         let version = version.into();
         let valid = (1..=Self::MAX_LEN).contains(&version.len())
             && version
@@ -220,7 +222,7 @@ impl BotVersion {
                 .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '+' | '_' | '-'));
         valid
             .then_some(Self(version))
-            .ok_or(BotInfoError::InvalidVersion)
+            .ok_or(CoglingInfoError::InvalidVersion)
     }
 
     /// The version text.
@@ -230,50 +232,50 @@ impl BotVersion {
     }
 }
 
-impl TryFrom<String> for BotVersion {
-    type Error = BotInfoError;
+impl TryFrom<String> for CoglingVersion {
+    type Error = CoglingInfoError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::new(value)
     }
 }
 
-impl From<BotVersion> for String {
-    fn from(version: BotVersion) -> Self {
+impl From<CoglingVersion> for String {
+    fn from(version: CoglingVersion) -> Self {
         version.0
     }
 }
 
-impl fmt::Display for BotVersion {
+impl fmt::Display for CoglingVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
     }
 }
 
-/// How a bot identifies itself.
+/// How a cogling identifies itself.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct BotInfo {
+pub struct CoglingInfo {
     /// Self-declared name.
-    pub name: BotName,
+    pub name: CoglingName,
     /// Optional self-declared version.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub version: Option<BotVersion>,
+    pub version: Option<CoglingVersion>,
 }
 
-impl BotInfo {
-    /// Validates and builds bot info.
+impl CoglingInfo {
+    /// Validates and builds cogling info.
     ///
     /// # Errors
     ///
-    /// [`BotInfoError`] if the name or version is invalid.
-    pub fn new(name: impl Into<String>, version: Option<&str>) -> Result<Self, BotInfoError> {
+    /// [`CoglingInfoError`] if the name or version is invalid.
+    pub fn new(name: impl Into<String>, version: Option<&str>) -> Result<Self, CoglingInfoError> {
         Ok(Self {
-            name: BotName::new(name)?,
-            version: version.map(BotVersion::new).transpose()?,
+            name: CoglingName::new(name)?,
+            version: version.map(CoglingVersion::new).transpose()?,
         })
     }
 }
 
-impl fmt::Display for BotInfo {
+impl fmt::Display for CoglingInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.version {
             Some(v) => write!(f, "{} {v}", self.name),
@@ -287,31 +289,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn bot_name_validation() {
-        assert!(BotName::new("Strategist").is_ok());
-        assert!(BotName::new("ünïcödé ✓").is_ok());
-        assert!(BotName::new("").is_err());
-        assert!(BotName::new(" padded").is_err());
-        assert!(BotName::new("tab\there").is_err());
-        assert!(BotName::new("x".repeat(65)).is_err());
-        assert!(serde_json::from_str::<BotName>("\"\"").is_err());
+    fn cogling_name_validation() {
+        assert!(CoglingName::new("Strategist").is_ok());
+        assert!(CoglingName::new("ünïcödé ✓").is_ok());
+        assert!(CoglingName::new("").is_err());
+        assert!(CoglingName::new(" padded").is_err());
+        assert!(CoglingName::new("tab\there").is_err());
+        assert!(CoglingName::new("x".repeat(65)).is_err());
+        assert!(serde_json::from_str::<CoglingName>("\"\"").is_err());
     }
 
     #[test]
-    fn bot_version_validation() {
-        assert!(BotVersion::new("2.3.1-beta+7").is_ok());
-        assert!(BotVersion::new("v 1").is_err());
-        assert!(BotVersion::new("").is_err());
-        assert!(BotVersion::new("1".repeat(33)).is_err());
+    fn cogling_version_validation() {
+        assert!(CoglingVersion::new("2.3.1-beta+7").is_ok());
+        assert!(CoglingVersion::new("v 1").is_err());
+        assert!(CoglingVersion::new("").is_err());
+        assert!(CoglingVersion::new("1".repeat(33)).is_err());
     }
 
     #[test]
-    fn bot_info_display_and_json() {
-        let info = BotInfo::new("Strat", Some("1.0")).unwrap();
+    fn cogling_info_display_and_json() {
+        let info = CoglingInfo::new("Strat", Some("1.0")).unwrap();
         assert_eq!(info.to_string(), "Strat 1.0");
         let json = serde_json::to_string(&info).unwrap();
         assert_eq!(json, r#"{"name":"Strat","version":"1.0"}"#);
-        let bare = BotInfo::new("Strat", None).unwrap();
+        let bare = CoglingInfo::new("Strat", None).unwrap();
         assert_eq!(serde_json::to_string(&bare).unwrap(), r#"{"name":"Strat"}"#);
     }
 

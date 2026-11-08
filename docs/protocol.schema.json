@@ -5,17 +5,17 @@
         "description": "A developer API key (hosted mode). `Debug` is redacted.",
         "type": "string"
       },
-      "BotInfo": {
-        "description": "How a bot identifies itself.",
+      "CoglingInfo": {
+        "description": "How a cogling identifies itself.",
         "properties": {
           "name": {
-            "$ref": "#/$defs/BotName",
+            "$ref": "#/$defs/CoglingName",
             "description": "Self-declared name."
           },
           "version": {
             "anyOf": [
               {
-                "$ref": "#/$defs/BotVersion"
+                "$ref": "#/$defs/CoglingVersion"
               },
               {
                 "type": "null"
@@ -29,12 +29,12 @@
         ],
         "type": "object"
       },
-      "BotName": {
-        "description": "A self-declared bot name, e.g. `\"Strategist\"`.",
+      "CoglingName": {
+        "description": "A self-declared cogling name, e.g. `\"Strategist\"`.",
         "type": "string"
       },
-      "BotVersion": {
-        "description": "A self-declared bot version, e.g. `\"2.3.1\"`.",
+      "CoglingVersion": {
+        "description": "A self-declared cogling version, e.g. `\"2.3.1\"`.",
         "type": "string"
       },
       "DecisionId": {
@@ -64,7 +64,7 @@
         ]
       },
       "ResumeToken": {
-        "description": "Secret that lets a bot reclaim its seat after a disconnect.\n\n`Debug` is redacted so tokens do not end up in logs.",
+        "description": "Secret that lets a cogling reclaim its seat after a disconnect.\n\n`Debug` is redacted so tokens do not end up in logs.",
         "type": "string"
       },
       "SeatCount": {
@@ -76,7 +76,7 @@
       }
     },
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "description": "Messages sent by bots.",
+    "description": "Messages sent by coglings.",
     "oneOf": [
       {
         "description": "First message on every connection.",
@@ -92,12 +92,12 @@
             ],
             "description": "Developer API key; required in hosted mode, ignored in standalone."
           },
-          "bot": {
-            "$ref": "#/$defs/BotInfo",
+          "cogling": {
+            "$ref": "#/$defs/CoglingInfo",
             "description": "Self-declared identity."
           },
           "protocol": {
-            "description": "Protocol version the bot speaks; must equal [`PROTOCOL_VERSION`].",
+            "description": "Protocol version the cogling speaks; must equal [`PROTOCOL_VERSION`].",
             "format": "uint32",
             "minimum": 0,
             "type": "integer"
@@ -110,12 +110,12 @@
         "required": [
           "type",
           "protocol",
-          "bot"
+          "cogling"
         ],
         "type": "object"
       },
       {
-        "description": "Creates a lobby game that bots can `join` by id.",
+        "description": "Creates a lobby game that coglings can `join` by id.",
         "properties": {
           "config": {
             "description": "Game configuration; defaults to the canonical ruleset."
@@ -188,7 +188,7 @@
         "description": "Enters the quick-match queue for a game.",
         "properties": {
           "config": {
-            "description": "Game configuration; only bots asking for the same configuration\nare matched together."
+            "description": "Game configuration; only coglings asking for the same configuration\nare matched together."
           },
           "game": {
             "description": "Game id, e.g. `\"tictactoe\"`.",
@@ -307,17 +307,17 @@
   "protocol_version": 1,
   "server_message": {
     "$defs": {
-      "BotInfo": {
-        "description": "How a bot identifies itself.",
+      "CoglingInfo": {
+        "description": "How a cogling identifies itself.",
         "properties": {
           "name": {
-            "$ref": "#/$defs/BotName",
+            "$ref": "#/$defs/CoglingName",
             "description": "Self-declared name."
           },
           "version": {
             "anyOf": [
               {
-                "$ref": "#/$defs/BotVersion"
+                "$ref": "#/$defs/CoglingVersion"
               },
               {
                 "type": "null"
@@ -331,12 +331,12 @@
         ],
         "type": "object"
       },
-      "BotName": {
-        "description": "A self-declared bot name, e.g. `\"Strategist\"`.",
+      "CoglingName": {
+        "description": "A self-declared cogling name, e.g. `\"Strategist\"`.",
         "type": "string"
       },
-      "BotVersion": {
-        "description": "A self-declared bot version, e.g. `\"2.3.1\"`.",
+      "CoglingVersion": {
+        "description": "A self-declared cogling version, e.g. `\"2.3.1\"`.",
         "type": "string"
       },
       "DecisionId": {
@@ -350,7 +350,7 @@
         "oneOf": [
           {
             "const": "protocol_version",
-            "description": "The bot's protocol version is not supported.",
+            "description": "The cogling's protocol version is not supported.",
             "type": "string"
           },
           {
@@ -435,12 +435,12 @@
           },
           {
             "const": "disconnected",
-            "description": "The bot stayed disconnected past the reconnect grace period.",
+            "description": "The cogling stayed disconnected past the reconnect grace period.",
             "type": "string"
           },
           {
             "const": "invalid_action",
-            "description": "An in-process agent failed to produce a legal action (simulation only;\nnetworked bots may retry until the deadline instead).",
+            "description": "An in-process agent failed to produce a legal action (simulation only;\nnetworked coglings may retry until the deadline instead).",
             "type": "string"
           }
         ]
@@ -569,9 +569,9 @@
       "PlayerSlot": {
         "description": "One seat at the table, as announced in `game_start`.",
         "properties": {
-          "bot": {
-            "$ref": "#/$defs/BotInfo",
-            "description": "The bot occupying it."
+          "cogling": {
+            "$ref": "#/$defs/CoglingInfo",
+            "description": "The cogling occupying it."
           },
           "seat": {
             "$ref": "#/$defs/Seat",
@@ -580,7 +580,7 @@
         },
         "required": [
           "seat",
-          "bot"
+          "cogling"
         ],
         "type": "object"
       },
@@ -622,7 +622,7 @@
         ]
       },
       "ResumeToken": {
-        "description": "Secret that lets a bot reclaim its seat after a disconnect.\n\n`Debug` is redacted so tokens do not end up in logs.",
+        "description": "Secret that lets a cogling reclaim its seat after a disconnect.\n\n`Debug` is redacted so tokens do not end up in logs.",
         "type": "string"
       },
       "Seat": {

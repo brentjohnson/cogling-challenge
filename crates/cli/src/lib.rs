@@ -1,4 +1,4 @@
-//! Implementation of the `ogap` command-line tool.
+//! Implementation of the `cogling` command-line tool.
 //!
 //! `main.rs` only parses arguments and reports errors; every command lives
 //! here so it can be tested.
@@ -11,16 +11,16 @@ use std::time::Instant;
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use ogap_bot_sdk::{ClientConfig, GameSummary, Matchmaking};
-use ogap_connect4::ConnectFour;
-use ogap_eventlog::{FileLogStore, GameLog, LogStore, NullLogStore, Replayer};
-use ogap_game_core::{
+use cogling_connect4::ConnectFour;
+use cogling_eventlog::{FileLogStore, GameLog, LogStore, NullLogStore, Replayer};
+use cogling_game_core::{
     Agent, ForfeitPolicy, Game, GameRegistry, RandomAgent, Seat, SeatCount, Seed,
 };
-use ogap_protocol::{BotInfo, ClientMessage, GameId, ObservationMode};
-use ogap_server::{Server, ServerConfig, ThinkTime};
-use ogap_sim::{BatchConfig, BatchReport, Entrant, Seating};
-use ogap_tictactoe::TicTacToe;
+use cogling_protocol::{ClientMessage, CoglingInfo, GameId, ObservationMode};
+use cogling_sdk::{ClientConfig, GameSummary, Matchmaking};
+use cogling_server::{Server, ServerConfig, ThinkTime};
+use cogling_sim::{BatchConfig, BatchReport, Entrant, Seating};
+use cogling_tictactoe::TicTacToe;
 use serde_json::{Value, json};
 
 /// Every game shipped with the platform.
@@ -35,9 +35,9 @@ pub fn builtin_registry() -> Result<GameRegistry> {
     Ok(registry)
 }
 
-/// The Open Game Agent Platform tool.
+/// Cogling Challenge: the board game bot battle. You build it. It plays.
 #[derive(Debug, Parser)]
-#[command(name = "ogap", version, about)]
+#[command(name = "cogling", version, about)]
 pub struct Cli {
     /// What to do.
     #[command(subcommand)]
@@ -58,11 +58,11 @@ pub enum Command {
     /// Manage lobby games on a server.
     #[command(subcommand)]
     Game(GameCommand),
-    /// Connect a built-in example bot to a server.
-    Bot(BotArgs),
+    /// Connect a built-in example cogling to a server.
+    Run(RunArgs),
 }
 
-/// `ogap serve`.
+/// `cogling serve`.
 #[derive(Debug, Args)]
 pub struct ServeArgs {
     /// Address to listen on.
@@ -124,7 +124,7 @@ impl From<ForfeitArg> for ForfeitPolicy {
     }
 }
 
-/// `ogap sim`.
+/// `cogling sim`.
 #[derive(Debug, Args)]
 pub struct SimArgs {
     /// Game id.
@@ -174,7 +174,7 @@ impl From<SeatingArg> for Seating {
     }
 }
 
-/// `ogap replay`.
+/// `cogling replay`.
 #[derive(Debug, Args)]
 pub struct ReplayArgs {
     /// Log file.
@@ -187,14 +187,14 @@ pub struct ReplayArgs {
     pub verify: bool,
 }
 
-/// `ogap game ...`.
+/// `cogling game ...`.
 #[derive(Debug, Subcommand)]
 pub enum GameCommand {
     /// Create a lobby game and print its id.
     Create(CreateArgs),
 }
 
-/// `ogap game create`.
+/// `cogling game create`.
 #[derive(Debug, Args)]
 pub struct CreateArgs {
     /// Server WebSocket URL.
@@ -217,9 +217,9 @@ pub struct CreateArgs {
     pub observation_mode: Option<ObservationArg>,
 }
 
-/// `ogap bot`.
+/// `cogling run`.
 #[derive(Debug, Args)]
-pub struct BotArgs {
+pub struct RunArgs {
     /// Server WebSocket URL.
     #[arg(long, default_value = "ws://127.0.0.1:7878/ws")]
     pub url: String,
@@ -229,10 +229,10 @@ pub struct BotArgs {
     /// Strategy: `random` or `rules`.
     #[arg(long, default_value = "random")]
     pub strategy: String,
-    /// Bot name (default: `example-<strategy>`).
+    /// Cogling name (default: `example-<strategy>`).
     #[arg(long)]
     pub name: Option<String>,
-    /// Bot version.
+    /// Cogling version.
     #[arg(long, default_value = env!("CARGO_PKG_VERSION"))]
     pub version: String,
     /// Games to play in a row (quick-match only).
@@ -285,7 +285,7 @@ pub async fn serve(args: ServeArgs) -> Result<()> {
     tracing::info!(
         %addr,
         logs = %if args.no_logs { "off".into() } else { args.log_dir.display().to_string() },
-        "ogap server listening; bots connect to ws://{addr}/ws"
+        "cogling server listening; coglings connect to ws://{addr}/ws"
     );
     let server = Server::new(builtin_registry()?, config, logs);
     server
@@ -357,7 +357,7 @@ fn run_batch_for<G: Game>(
         forfeit_policy: ForfeitPolicy::default(),
         threads: args.threads,
     };
-    Ok(ogap_sim::run_batch(
+    Ok(cogling_sim::run_batch(
         game,
         &config,
         &entrants,
@@ -374,9 +374,9 @@ fn run_batch_for<G: Game>(
 pub fn sim(args: &SimArgs, out: &mut impl Write) -> Result<BatchReport> {
     let started = Instant::now();
     let report = match args.game.as_str() {
-        "tictactoe" => run_batch_for(&TicTacToe, ogap_tictactoe::agents::by_name, args)?,
-        "connect4" => run_batch_for(&ConnectFour, ogap_connect4::agents::by_name, args)?,
-        other => bail!("unknown game {other:?}; see `ogap games`"),
+        "tictactoe" => run_batch_for(&TicTacToe, cogling_tictactoe::agents::by_name, args)?,
+        "connect4" => run_batch_for(&ConnectFour, cogling_connect4::agents::by_name, args)?,
+        other => bail!("unknown game {other:?}; see `cogling games`"),
     };
     let elapsed = started.elapsed();
     if args.json {
@@ -506,8 +506,8 @@ pub fn replay(args: &ReplayArgs, out: &mut impl Write) -> Result<()> {
 ///
 /// Fails on invalid arguments or if the server rejects the request.
 pub async fn create_game(args: CreateArgs) -> Result<GameId> {
-    let bot = BotInfo::new("ogap-cli", Some(env!("CARGO_PKG_VERSION")))?;
-    let config = ClientConfig::new(&args.url, bot, Matchmaking::queue(&args.game));
+    let cogling = CoglingInfo::new("cogling-cli", Some(env!("CARGO_PKG_VERSION")))?;
+    let config = ClientConfig::new(&args.url, cogling, Matchmaking::queue(&args.game));
     let request = ClientMessage::CreateGame {
         game: args.game,
         seats: args.seats.map(SeatCount::new).transpose()?,
@@ -515,23 +515,23 @@ pub async fn create_game(args: CreateArgs) -> Result<GameId> {
         think_time_ms: args.think_time_ms,
         observation_mode: args.observation_mode.map(Into::into),
     };
-    Ok(ogap_bot_sdk::create_game(&config, request).await?)
+    Ok(cogling_sdk::create_game(&config, request).await?)
 }
 
-/// Runs a built-in example bot.
+/// Runs a built-in example cogling.
 ///
 /// # Errors
 ///
 /// Fails on unknown strategies, invalid names, or connection errors.
-pub async fn bot(args: BotArgs) -> Result<Vec<GameSummary>> {
+pub async fn run(args: RunArgs) -> Result<Vec<GameSummary>> {
     let seed = Seed::new(args.seed.unwrap_or_else(time_seed));
-    let mut strategy = ogap_bot_sdk::strategies::for_game(&args.game, &args.strategy, seed)
+    let mut strategy = cogling_sdk::strategies::for_game(&args.game, &args.strategy, seed)
         .ok_or_else(|| {
             anyhow!(
                 "no {:?} strategy for {:?}; available: {:?}",
                 args.strategy,
                 args.game,
-                ogap_bot_sdk::strategies::NAMES
+                cogling_sdk::strategies::NAMES
             )
         })?;
     let name = args
@@ -545,11 +545,11 @@ pub async fn bot(args: BotArgs) -> Result<Vec<GameSummary>> {
         games: args.games,
         ..ClientConfig::new(
             args.url,
-            BotInfo::new(name, Some(&args.version))?,
+            CoglingInfo::new(name, Some(&args.version))?,
             matchmaking,
         )
     };
-    Ok(ogap_bot_sdk::run(&config, &mut strategy).await?)
+    Ok(cogling_sdk::run(&config, &mut strategy).await?)
 }
 
 #[cfg(test)]
@@ -607,7 +607,7 @@ mod tests {
 
     #[test]
     fn sim_logs_replay_with_every_view() {
-        let dir = std::env::temp_dir().join(format!("ogap-cli-test-{}", GameId::new()));
+        let dir = std::env::temp_dir().join(format!("cogling-cli-test-{}", GameId::new()));
         let mut args = sim_args("tictactoe", &["rules", "random"]);
         args.games = 3;
         args.log_dir = Some(dir.clone());

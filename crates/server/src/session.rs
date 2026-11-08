@@ -9,17 +9,17 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
 
-use ogap_eventlog::{
+use cogling_eventlog::{
     EventBody, Header, HeaderKind, LOG_FORMAT, LogSink, LogStore, PlayerRecord, SeatStats, Source,
     unix_ms,
 };
-use ogap_game_core::{
+use cogling_game_core::{
     DynError, DynGame, DynState, ForfeitPolicy, ForfeitReason, GameResult, IllegalAction, Seat,
     SeatCount, Seed, Status,
 };
-use ogap_protocol::{
-    BotInfo, DecisionId, ErrorCode, GameId, ObservationMode, PlayerSlot, RejectCode, ResumeToken,
-    ServerMessage,
+use cogling_protocol::{
+    CoglingInfo, DecisionId, ErrorCode, GameId, ObservationMode, PlayerSlot, RejectCode,
+    ResumeToken, ServerMessage,
 };
 use serde_json::Value;
 use tokio::sync::{mpsc, oneshot};
@@ -33,7 +33,7 @@ pub(crate) type ConnId = u64;
 
 /// A session's handle on a connection's outbound queue.
 ///
-/// Sends never block the session: if a bot stops reading and its queue
+/// Sends never block the session: if a cogling stops reading and its queue
 /// fills, messages are dropped (it will then miss its deadline).
 #[derive(Debug, Clone)]
 pub(crate) struct Outbox {
@@ -53,10 +53,10 @@ impl Outbox {
     }
 }
 
-/// A bot taking part in a session.
+/// A cogling taking part in a session.
 #[derive(Debug, Clone)]
 pub(crate) struct Participant {
-    pub(crate) bot: BotInfo,
+    pub(crate) cogling: CoglingInfo,
     pub(crate) outbox: Outbox,
 }
 
@@ -124,7 +124,7 @@ pub(crate) enum Command {
         decision_id: DecisionId,
         action: Value,
         /// When the frame arrived at the server; used for timing so that
-        /// session scheduling delays never count against the bot.
+        /// session scheduling delays never count against the cogling.
         received: Instant,
     },
     Disconnected {
@@ -211,7 +211,7 @@ struct Pending {
 }
 
 struct SeatSlot {
-    bot: BotInfo,
+    cogling: CoglingInfo,
     conn: Option<Outbox>,
     token: ResumeToken,
     disconnected_at: Option<Instant>,
@@ -359,7 +359,7 @@ impl Session {
             .zip(&self.lobby)
             .map(|(seat, p)| PlayerRecord {
                 seat,
-                bot: p.bot.clone(),
+                cogling: p.cogling.clone(),
             })
             .collect();
         let header = Header {
@@ -388,7 +388,7 @@ impl Session {
             .seats()
             .zip(self.lobby.drain(..))
             .map(|(seat, p)| SeatSlot {
-                bot: p.bot,
+                cogling: p.cogling,
                 conn: Some(p.outbox),
                 token: new_token(),
                 disconnected_at: None,
@@ -500,7 +500,7 @@ impl Running {
                 .zip(ctx.spec.seats.seats())
                 .map(|(s, seat)| PlayerSlot {
                     seat,
-                    bot: s.bot.clone(),
+                    cogling: s.cogling.clone(),
                 })
                 .collect(),
             resume_token: slot.token.clone(),
@@ -763,11 +763,11 @@ impl Running {
 struct ClosedSink;
 
 impl LogSink for ClosedSink {
-    fn append(&mut self, _t_ms: u64, _body: EventBody) -> Result<u64, ogap_eventlog::LogError> {
+    fn append(&mut self, _t_ms: u64, _body: EventBody) -> Result<u64, cogling_eventlog::LogError> {
         Ok(0)
     }
 
-    fn close(self: Box<Self>) -> Result<(), ogap_eventlog::LogError> {
+    fn close(self: Box<Self>) -> Result<(), cogling_eventlog::LogError> {
         Ok(())
     }
 }

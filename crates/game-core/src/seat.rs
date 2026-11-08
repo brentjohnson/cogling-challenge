@@ -1,6 +1,6 @@
 //! Seats: the only notion of "player" a game engine knows about.
 //!
-//! Engines never see bot identities. The platform maps seats to bots (and
+//! Engines never see cogling identities. The platform maps seats to coglings (and
 //! randomizes that mapping), which keeps engines independent of hosting.
 
 use std::fmt;

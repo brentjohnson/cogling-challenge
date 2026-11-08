@@ -20,8 +20,8 @@ pub use store::{FileLogStore, LogSink, LogStore, LogWriter, MemoryLogStore, Null
 use std::io::BufRead;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use ogap_game_core::{GameResult, Seat, SeatCount, Seed, StateHash};
-use ogap_protocol::{BotInfo, DecisionId, GameId, ObservationMode, RejectCode};
+use cogling_game_core::{GameResult, Seat, SeatCount, Seed, StateHash};
+use cogling_protocol::{CoglingInfo, DecisionId, GameId, ObservationMode, RejectCode};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -73,7 +73,7 @@ pub enum HeaderKind {
 pub enum Source {
     /// Headless in-process simulation.
     Sim,
-    /// Game server with networked bots.
+    /// Game server with networked coglings.
     Server,
 }
 
@@ -82,8 +82,8 @@ pub enum Source {
 pub struct PlayerRecord {
     /// The seat.
     pub seat: Seat,
-    /// Bot identity and version.
-    pub bot: BotInfo,
+    /// Cogling identity and version.
+    pub cogling: CoglingInfo,
 }
 
 /// First line of every log: everything needed to reproduce the game.
@@ -205,12 +205,12 @@ pub enum EventBody {
         /// The decision that expired.
         decision_id: DecisionId,
     },
-    /// A bot disconnected.
+    /// A cogling disconnected.
     Disconnect {
         /// The seat.
         seat: Seat,
     },
-    /// A bot reconnected.
+    /// A cogling reconnected.
     Reconnect {
         /// The seat.
         seat: Seat,
@@ -347,8 +347,8 @@ impl GameLog {
 mod tests {
     use std::io::Cursor;
 
-    use ogap_game_core::{GameRegistry, Status};
-    use ogap_tictactoe::TicTacToe;
+    use cogling_game_core::{GameRegistry, Status};
+    use cogling_tictactoe::TicTacToe;
     use serde_json::json;
 
     use super::*;
@@ -367,11 +367,11 @@ mod tests {
             players: vec![
                 PlayerRecord {
                     seat: Seat::FIRST,
-                    bot: BotInfo::new("a", Some("1")).unwrap(),
+                    cogling: CoglingInfo::new("a", Some("1")).unwrap(),
                 },
                 PlayerRecord {
                     seat: Seat::SECOND,
-                    bot: BotInfo::new("b", None).unwrap(),
+                    cogling: CoglingInfo::new("b", None).unwrap(),
                 },
             ],
             source: Source::Sim,

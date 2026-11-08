@@ -281,6 +281,139 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
 
 [[package]]
+name = "cogling-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "cogling-connect4",
+ "cogling-eventlog",
+ "cogling-game-core",
+ "cogling-protocol",
+ "cogling-sdk",
+ "cogling-server",
+ "cogling-sim",
+ "cogling-tictactoe",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "cogling-connect4"
+version = "0.1.0"
+dependencies = [
+ "cogling-game-core",
+ "proptest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cogling-eventlog"
+version = "0.1.0"
+dependencies = [
+ "cogling-game-core",
+ "cogling-protocol",
+ "cogling-tictactoe",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
+name = "cogling-game-core"
+version = "0.1.0"
+dependencies = [
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "cogling-protocol"
+version = "0.1.0"
+dependencies = [
+ "cogling-game-core",
+ "insta",
+ "proptest",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
+name = "cogling-sdk"
+version = "0.1.0"
+dependencies = [
+ "cogling-connect4",
+ "cogling-eventlog",
+ "cogling-game-core",
+ "cogling-protocol",
+ "cogling-server",
+ "cogling-tictactoe",
+ "futures-util",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-tungstenite 0.30.0",
+ "tracing",
+]
+
+[[package]]
+name = "cogling-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "cogling-connect4",
+ "cogling-eventlog",
+ "cogling-game-core",
+ "cogling-protocol",
+ "cogling-tictactoe",
+ "futures-util",
+ "rand 0.10.3",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-tungstenite 0.30.0",
+ "tower-http",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "cogling-sim"
+version = "0.1.0"
+dependencies = [
+ "cogling-connect4",
+ "cogling-eventlog",
+ "cogling-game-core",
+ "cogling-protocol",
+ "cogling-tictactoe",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
+name = "cogling-tictactoe"
+version = "0.1.0"
+dependencies = [
+ "cogling-game-core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -742,139 +875,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
  "autocfg",
-]
-
-[[package]]
-name = "ogap-bot-sdk"
-version = "0.1.0"
-dependencies = [
- "futures-util",
- "ogap-connect4",
- "ogap-eventlog",
- "ogap-game-core",
- "ogap-protocol",
- "ogap-server",
- "ogap-tictactoe",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tokio-tungstenite 0.30.0",
- "tracing",
-]
-
-[[package]]
-name = "ogap-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "ogap-bot-sdk",
- "ogap-connect4",
- "ogap-eventlog",
- "ogap-game-core",
- "ogap-protocol",
- "ogap-server",
- "ogap-sim",
- "ogap-tictactoe",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "ogap-connect4"
-version = "0.1.0"
-dependencies = [
- "ogap-game-core",
- "proptest",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "ogap-eventlog"
-version = "0.1.0"
-dependencies = [
- "ogap-game-core",
- "ogap-protocol",
- "ogap-tictactoe",
- "serde",
- "serde_json",
- "thiserror",
- "uuid",
-]
-
-[[package]]
-name = "ogap-game-core"
-version = "0.1.0"
-dependencies = [
- "schemars",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "ogap-protocol"
-version = "0.1.0"
-dependencies = [
- "insta",
- "ogap-game-core",
- "proptest",
- "schemars",
- "serde",
- "serde_json",
- "thiserror",
- "uuid",
-]
-
-[[package]]
-name = "ogap-server"
-version = "0.1.0"
-dependencies = [
- "axum",
- "futures-util",
- "ogap-connect4",
- "ogap-eventlog",
- "ogap-game-core",
- "ogap-protocol",
- "ogap-tictactoe",
- "rand 0.10.3",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tokio-tungstenite 0.30.0",
- "tower-http",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "ogap-sim"
-version = "0.1.0"
-dependencies = [
- "ogap-connect4",
- "ogap-eventlog",
- "ogap-game-core",
- "ogap-protocol",
- "ogap-tictactoe",
- "rayon",
- "serde",
- "serde_json",
- "thiserror",
- "uuid",
-]
-
-[[package]]
-name = "ogap-tictactoe"
-version = "0.1.0"
-dependencies = [
- "ogap-game-core",
- "serde",
- "serde_json",
 ]
 
 [[package]]

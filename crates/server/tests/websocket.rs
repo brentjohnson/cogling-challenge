@@ -4,13 +4,13 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
+use cogling_connect4::ConnectFour;
+use cogling_eventlog::{GameLog, MemoryLogStore, Replayer};
+use cogling_game_core::{GameRegistry, GameResult};
+use cogling_protocol::{ClientMessage, CoglingInfo, ErrorCode, PROTOCOL_VERSION, ServerMessage};
+use cogling_server::{Server, ServerConfig};
+use cogling_tictactoe::TicTacToe;
 use futures_util::{SinkExt, StreamExt};
-use ogap_connect4::ConnectFour;
-use ogap_eventlog::{GameLog, MemoryLogStore, Replayer};
-use ogap_game_core::{GameRegistry, GameResult};
-use ogap_protocol::{BotInfo, ClientMessage, ErrorCode, PROTOCOL_VERSION, ServerMessage};
-use ogap_server::{Server, ServerConfig};
-use ogap_tictactoe::TicTacToe;
 use serde_json::Value;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -53,7 +53,7 @@ impl Client {
         let mut c = Self::connect(addr).await;
         c.send(&ClientMessage::Hello {
             protocol: PROTOCOL_VERSION,
-            bot: BotInfo::new(name, Some("0.1")).expect("valid bot name"),
+            cogling: CoglingInfo::new(name, Some("0.1")).expect("valid cogling name"),
             api_key: None,
         })
         .await;
@@ -139,7 +139,7 @@ async fn http_get(addr: SocketAddr, path: &str) -> String {
 }
 
 #[tokio::test]
-async fn bots_play_connect4_over_websockets() {
+async fn coglings_play_connect4_over_websockets() {
     let (addr, logs) = start(ServerConfig::default()).await;
     let mut a = Client::hello(addr, "alpha").await;
     let mut b = Client::hello(addr, "beta").await;
@@ -192,7 +192,7 @@ async fn lobby_flow_over_websockets() {
         seats: None,
         config: Some(serde_json::json!({"first_seat": 1})),
         think_time_ms: Some(2_000),
-        observation_mode: Some(ogap_protocol::ObservationMode::State),
+        observation_mode: Some(cogling_protocol::ObservationMode::State),
     })
     .await;
     let Some(ServerMessage::GameCreated { game_id }) = a.recv().await else {
@@ -247,7 +247,7 @@ async fn protocol_violations() {
 
     // Protocol version mismatch is fatal.
     let mut c = Client::connect(addr).await;
-    c.send_raw(r#"{"type":"hello","protocol":99,"bot":{"name":"x"}}"#)
+    c.send_raw(r#"{"type":"hello","protocol":99,"cogling":{"name":"x"}}"#)
         .await;
     assert_eq!(c.expect_error().await, (ErrorCode::ProtocolVersion, true));
     assert!(c.recv().await.is_none());
@@ -262,8 +262,8 @@ async fn protocol_violations() {
         Some(ServerMessage::Pong { nonce: Some(7) })
     ));
     c.send(&ClientMessage::Action {
-        game_id: ogap_protocol::GameId::new(),
-        decision_id: ogap_protocol::DecisionId::FIRST,
+        game_id: cogling_protocol::GameId::new(),
+        decision_id: cogling_protocol::DecisionId::FIRST,
         action: Value::Null,
     })
     .await;
@@ -287,7 +287,7 @@ async fn protocol_violations() {
     .await;
     assert_eq!(c.expect_error().await, (ErrorCode::UnknownGame, false));
     c.send(&ClientMessage::Join {
-        game_id: ogap_protocol::GameId::new(),
+        game_id: cogling_protocol::GameId::new(),
     })
     .await;
     assert_eq!(c.expect_error().await, (ErrorCode::NoSuchGame, false));

@@ -3,19 +3,19 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use ogap_bot_sdk::{ClientConfig, ClientError, Matchmaking, create_game, run, strategies};
-use ogap_eventlog::NullLogStore;
-use ogap_game_core::{GameRegistry, Seed};
-use ogap_protocol::{BotInfo, ClientMessage, ErrorCode};
-use ogap_server::{Server, ServerConfig};
+use cogling_eventlog::NullLogStore;
+use cogling_game_core::{GameRegistry, Seed};
+use cogling_protocol::{ClientMessage, CoglingInfo, ErrorCode};
+use cogling_sdk::{ClientConfig, ClientError, Matchmaking, create_game, run, strategies};
+use cogling_server::{Server, ServerConfig};
 
 async fn start() -> SocketAddr {
     let mut registry = GameRegistry::new();
     registry
-        .register(ogap_tictactoe::TicTacToe)
+        .register(cogling_tictactoe::TicTacToe)
         .expect("register tictactoe");
     registry
-        .register(ogap_connect4::ConnectFour)
+        .register(cogling_connect4::ConnectFour)
         .expect("register connect4");
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
@@ -31,7 +31,7 @@ fn config(addr: SocketAddr, name: &str, matchmaking: Matchmaking, games: u32) ->
         games,
         ..ClientConfig::new(
             format!("ws://{addr}/ws"),
-            BotInfo::new(name, Some("1.0")).expect("valid name"),
+            CoglingInfo::new(name, Some("1.0")).expect("valid name"),
             matchmaking,
         )
     }
@@ -87,10 +87,10 @@ async fn lobby_via_create_and_join() {
 #[tokio::test]
 async fn blocking_errors_surface() {
     let addr = start().await;
-    let mut bot = strategies::for_game("chess", "random", Seed::new(0)).unwrap();
+    let mut cogling = strategies::for_game("chess", "random", Seed::new(0)).unwrap();
     let err = run(
         &config(addr, "lost", Matchmaking::queue("chess"), 1),
-        &mut bot,
+        &mut cogling,
     )
     .await
     .unwrap_err();
@@ -109,7 +109,7 @@ async fn blocking_errors_surface() {
         1,
     );
     assert!(matches!(
-        run(&unreachable, &mut bot).await,
+        run(&unreachable, &mut cogling).await,
         Err(ClientError::WebSocket(_))
     ));
 }

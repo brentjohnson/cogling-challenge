@@ -1,6 +1,6 @@
 //! Deterministic re-simulation of logged games.
 
-use ogap_game_core::{DynError, DynState, GameRegistry, GameResult, StateHash, Status};
+use cogling_game_core::{DynError, DynState, GameRegistry, GameResult, StateHash, Status};
 use thiserror::Error;
 
 use crate::{Event, EventBody, GameLog};
@@ -205,7 +205,7 @@ impl<'a> Replayer<'a> {
 mod tests {
     use std::io::Cursor;
 
-    use ogap_game_core::Seat;
+    use cogling_game_core::Seat;
     use serde_json::{Value, json};
 
     use super::*;

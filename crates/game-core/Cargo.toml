@@ -1,6 +1,6 @@
 [package]
-name = "ogap-game-core"
-description = "Game-engine contract, deterministic RNG, outcomes and conformance kit for the Open Game Agent Platform"
+name = "cogling-game-core"
+description = "Game-engine contract, deterministic RNG, outcomes and conformance kit for Cogling Challenge"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

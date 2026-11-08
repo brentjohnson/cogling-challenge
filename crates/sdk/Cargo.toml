@@ -1,6 +1,6 @@
 [package]
-name = "ogap-bot-sdk"
-description = "Rust client SDK and example bots for the Open Game Agent Platform"
+name = "cogling-sdk"
+description = "Rust client SDK and example coglings for Cogling Challenge"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,10 +9,10 @@ publish.workspace = true
 
 [dependencies]
 futures-util.workspace = true
-ogap-connect4.workspace = true
-ogap-game-core.workspace = true
-ogap-protocol.workspace = true
-ogap-tictactoe.workspace = true
+cogling-connect4.workspace = true
+cogling-game-core.workspace = true
+cogling-protocol.workspace = true
+cogling-tictactoe.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -21,8 +21,8 @@ tokio-tungstenite.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
-ogap-eventlog.workspace = true
-ogap-server.workspace = true
+cogling-eventlog.workspace = true
+cogling-server.workspace = true
 
 [lints]
 workspace = true

@@ -1,17 +1,17 @@
-//! `ogap`: run local game servers, simulations, replays and example bots.
+//! `cogling`: run local game servers, simulations, replays and example coglings.
 
 use std::io::Write;
 use std::process::ExitCode;
 
 use clap::Parser;
-use ogap_cli::{Cli, Command, GameCommand};
+use cogling_cli::{Cli, Command, GameCommand};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> ExitCode {
     let cli = Cli::parse();
     let default_level = match cli.command {
-        Command::Serve(_) | Command::Bot(_) => "info",
+        Command::Serve(_) | Command::Run(_) => "info",
         _ => "warn",
     };
     tracing_subscriber::fmt()
@@ -43,17 +43,17 @@ fn is_broken_pipe(e: &anyhow::Error) -> bool {
 async fn run(cli: Cli) -> anyhow::Result<()> {
     let mut out = std::io::stdout().lock();
     match cli.command {
-        Command::Serve(args) => ogap_cli::serve(args).await,
-        Command::Games => ogap_cli::games(&mut out),
-        Command::Sim(args) => ogap_cli::sim(&args, &mut out).map(drop),
-        Command::Replay(args) => ogap_cli::replay(&args, &mut out),
+        Command::Serve(args) => cogling_cli::serve(args).await,
+        Command::Games => cogling_cli::games(&mut out),
+        Command::Sim(args) => cogling_cli::sim(&args, &mut out).map(drop),
+        Command::Replay(args) => cogling_cli::replay(&args, &mut out),
         Command::Game(GameCommand::Create(args)) => {
-            let id = ogap_cli::create_game(args).await?;
+            let id = cogling_cli::create_game(args).await?;
             writeln!(out, "{id}")?;
             Ok(())
         }
-        Command::Bot(args) => {
-            for s in ogap_cli::bot(args).await? {
+        Command::Run(args) => {
+            for s in cogling_cli::run(args).await? {
                 let outcome = if s.won() { "won" } else { "did not win" };
                 writeln!(
                     out,

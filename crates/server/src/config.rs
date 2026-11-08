@@ -2,8 +2,8 @@
 
 use std::time::Duration;
 
-use ogap_game_core::ForfeitPolicy;
-use ogap_protocol::{Limits, ObservationMode};
+use cogling_game_core::ForfeitPolicy;
+use cogling_protocol::{Limits, ObservationMode};
 use thiserror::Error;
 
 /// A think time outside the allowed range.
@@ -62,7 +62,7 @@ pub struct ServerConfig {
     pub think_time: ThinkTime,
     /// Default observation mode for games that do not specify one.
     pub observation_mode: ObservationMode,
-    /// How long a disconnected bot may stay away before forfeiting (the
+    /// How long a disconnected cogling may stay away before forfeiting (the
     /// decision clock keeps running meanwhile).
     pub reconnect_grace: Duration,
     /// How long a lobby may wait for players before it is cancelled.
@@ -103,7 +103,7 @@ impl Default for ServerConfig {
 }
 
 impl ServerConfig {
-    /// Limits advertised to bots in `welcome`.
+    /// Limits advertised to coglings in `welcome`.
     #[must_use]
     pub const fn limits(&self) -> Limits {
         Limits {

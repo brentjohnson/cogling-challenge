@@ -69,7 +69,7 @@ pub enum IllegalAction {
 }
 
 impl IllegalAction {
-    /// Stable machine-readable code, used in the bot protocol.
+    /// Stable machine-readable code, used in the cogling protocol.
     #[must_use]
     pub const fn code(&self) -> &'static str {
         match self {
@@ -151,7 +151,7 @@ impl<C> Setup<C> {
 /// [`Setup::seed`] and stored in the state, so that the same setup and the
 /// same sequence of accepted actions always produce the same state.
 ///
-/// The authoritative [`Game::State`] is never sent to bots; they receive a
+/// The authoritative [`Game::State`] is never sent to coglings; they receive a
 /// [`Game::PlayerView`] containing only what their seat may know.
 ///
 /// Use [`crate::conformance`] to check an implementation against the

@@ -1,4 +1,4 @@
-//! Tic-Tac-Toe for the Open Game Agent Platform.
+//! Tic-Tac-Toe for Cogling Challenge.
 //!
 //! Standard rules on a 3×3 board. Seat 0 plays `X`, seat 1 plays `O`; which
 //! seat moves first is configurable (`first_seat`, default seat 0).
@@ -17,7 +17,7 @@ pub mod agents;
 
 use std::fmt;
 
-use ogap_game_core::{
+use cogling_game_core::{
     ActiveSeats, ConfigError, Game, GameInfo, IllegalAction, Outcome, Seat, SeatCount, SeatRange,
     Setup, Status,
 };
@@ -352,7 +352,7 @@ impl Game for TicTacToe {
 
 #[cfg(test)]
 mod tests {
-    use ogap_game_core::{Seed, conformance};
+    use cogling_game_core::{Seed, conformance};
     use serde_json::json;
 
     use super::*;

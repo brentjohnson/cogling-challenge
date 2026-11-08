@@ -4,8 +4,10 @@ Guidance for Claude Code when working in this repository.
 
 ## Project overview
 
-<!-- Fill in: what this crate/workspace does, who uses it, and anything non-obvious. -->
-- **Kind:** workspace (libraries + the `ogap` binary in `crates/cli`)
+Cogling Challenge: the board game bot battle. You build it. It plays. Developers write bots, called coglings, in any language; they connect over WebSocket and compete in turn-based board games with no humans at the table.
+
+- **Terminology:** call them coglings everywhere (docs, code, protocol). "Bot" appears only in the tagline and the one-line definition. `Agent` is a separate concept: an in-process player used by the simulator.
+- **Kind:** workspace (libraries + the `cogling` binary in `crates/cli`)
 - **MSRV:** 1.95 — keep in sync with `rust-version` in the workspace Cargo.toml
 - **Edition:** 2024
 

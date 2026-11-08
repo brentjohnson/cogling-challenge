@@ -45,7 +45,7 @@ pub enum DynError {
 }
 
 impl DynError {
-    /// Stable machine-readable code, used in the bot protocol.
+    /// Stable machine-readable code, used in the cogling protocol.
     #[must_use]
     pub const fn code(&self) -> &'static str {
         match self {
@@ -142,7 +142,7 @@ pub trait DynState: Send + Sync {
     /// [`DynError::Serialization`].
     fn public_view(&self) -> Result<Value, DynError>;
 
-    /// The full authoritative state (omniscient; never send to bots mid-game).
+    /// The full authoritative state (omniscient; never send to coglings mid-game).
     ///
     /// # Errors
     ///

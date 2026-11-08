@@ -5,7 +5,7 @@ use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError};
 
-use ogap_protocol::GameId;
+use cogling_protocol::GameId;
 
 use crate::{Event, EventBody, Header, LogError};
 
@@ -214,7 +214,7 @@ impl LogStore for MemoryLogStore {
 mod tests {
     use std::io::Cursor;
 
-    use ogap_game_core::Seat;
+    use cogling_game_core::Seat;
     use serde_json::json;
 
     use super::*;
@@ -238,7 +238,7 @@ mod tests {
 
     #[test]
     fn file_store_writes_readable_logs() {
-        let dir = std::env::temp_dir().join(format!("ogap-eventlog-test-{}", GameId::new()));
+        let dir = std::env::temp_dir().join(format!("cogling-eventlog-test-{}", GameId::new()));
         let store = FileLogStore::new(&dir).unwrap();
         let h = header(json!({}), 1);
         exercise(&store, &h);

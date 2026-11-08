@@ -1,6 +1,6 @@
 //! Reference agents for Connect Four.
 
-use ogap_game_core::{Agent, GameRng, RandomAgent, Seat, SeatCount};
+use cogling_game_core::{Agent, GameRng, RandomAgent, Seat, SeatCount};
 
 use crate::{Action, Board, ConnectFour, PlayerView};
 
@@ -24,7 +24,7 @@ pub fn by_name(name: &str) -> Option<Box<dyn Agent<ConnectFour>>> {
 pub struct Rules;
 
 /// The column [`Rules`] would play on `board` as `me`, or `None` if the
-/// board is full. Exposed so networked example bots can reuse it.
+/// board is full. Exposed so networked example coglings can reuse it.
 pub fn rules_move(board: &Board, me: Seat, rng: &mut GameRng) -> Option<u8> {
     let them = me.next(SeatCount::TWO);
     let open: Vec<u8> = board.open_columns().collect();
@@ -62,7 +62,7 @@ impl Agent<ConnectFour> for Rules {
 
 #[cfg(test)]
 mod tests {
-    use ogap_game_core::Seed;
+    use cogling_game_core::Seed;
 
     use super::*;
 

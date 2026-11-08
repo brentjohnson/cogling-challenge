@@ -8,7 +8,7 @@ members = [
     "crates/eventlog",
     "crates/sim",
     "crates/server",
-    "crates/bot-sdk",
+    "crates/sdk",
     "crates/cli",
 ]
 
@@ -21,14 +21,14 @@ publish = false
 
 [workspace.dependencies]
 # Internal crates
-ogap-game-core = { path = "crates/game-core" }
-ogap-tictactoe = { path = "crates/games/tictactoe" }
-ogap-connect4 = { path = "crates/games/connect4" }
-ogap-protocol = { path = "crates/protocol" }
-ogap-eventlog = { path = "crates/eventlog" }
-ogap-sim = { path = "crates/sim" }
-ogap-server = { path = "crates/server" }
-ogap-bot-sdk = { path = "crates/bot-sdk" }
+cogling-game-core = { path = "crates/game-core" }
+cogling-tictactoe = { path = "crates/games/tictactoe" }
+cogling-connect4 = { path = "crates/games/connect4" }
+cogling-protocol = { path = "crates/protocol" }
+cogling-eventlog = { path = "crates/eventlog" }
+cogling-sim = { path = "crates/sim" }
+cogling-server = { path = "crates/server" }
+cogling-sdk = { path = "crates/sdk" }
 
 # External crates
 anyhow = "1.0.104"

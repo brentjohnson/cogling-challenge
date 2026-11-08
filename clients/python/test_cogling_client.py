@@ -1,11 +1,11 @@
-"""Unit tests for the Python client and sample bots: python3 -m unittest -v"""
+"""Unit tests for the Python client and sample coglings: python3 -m unittest -v"""
 
 import io
 import random
 import unittest
 
-from ogap_client import _OP_TEXT, decode_frame, encode_frame
-from rules_bot import C4Board, c4_move, ttt_move
+from cogling_client import _OP_TEXT, decode_frame, encode_frame
+from rules_cogling import C4Board, c4_move, ttt_move
 
 
 class FrameTests(unittest.TestCase):

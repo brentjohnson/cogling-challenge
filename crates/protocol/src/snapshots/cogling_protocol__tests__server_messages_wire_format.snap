@@ -36,14 +36,14 @@ expression: frames
     "observation_mode": "state_and_legal",
     "players": [
       {
-        "bot": {
+        "cogling": {
           "name": "Strategist",
           "version": "2.3.1"
         },
         "seat": 0
       },
       {
-        "bot": {
+        "cogling": {
           "name": "random"
         },
         "seat": 1

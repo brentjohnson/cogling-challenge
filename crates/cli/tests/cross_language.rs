@@ -1,4 +1,4 @@
-//! Definition-of-success check: a Rust bot and a Python bot play Tic-Tac-Toe
+//! Definition-of-success check: a Rust cogling and a Python cogling play Tic-Tac-Toe
 //! and Connect Four against each other through a local server, and every game
 //! log replays exactly.
 
@@ -6,10 +6,10 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
 
-use ogap_cli::{BotArgs, ReplayArgs, builtin_registry};
-use ogap_eventlog::FileLogStore;
-use ogap_protocol::GameId;
-use ogap_server::{Server, ServerConfig};
+use cogling_cli::{ReplayArgs, RunArgs, builtin_registry};
+use cogling_eventlog::FileLogStore;
+use cogling_protocol::GameId;
+use cogling_server::{Server, ServerConfig};
 
 fn python() -> Option<&'static str> {
     ["python3", "python"].into_iter().find(|p| {
@@ -20,14 +20,14 @@ fn python() -> Option<&'static str> {
     })
 }
 
-fn python_bot(script: &str) -> PathBuf {
+fn python_cogling(script: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../clients/python")
         .join(script)
 }
 
 async fn play(url: &str, game: &str, py: &'static str, script: &str, games: u32) {
-    let script = python_bot(script);
+    let script = python_cogling(script);
     let py_url = url.to_owned();
     let py_game = game.to_owned();
     let python = tokio::task::spawn_blocking(move || {
@@ -43,9 +43,9 @@ async fn play(url: &str, game: &str, py: &'static str, script: &str, games: u32)
             ])
             .args(["--seed", "1"])
             .output()
-            .expect("run python bot")
+            .expect("run python cogling")
     });
-    let rust = ogap_cli::bot(BotArgs {
+    let rust = cogling_cli::run(RunArgs {
         url: url.to_owned(),
         game: game.to_owned(),
         strategy: "rules".into(),
@@ -57,10 +57,10 @@ async fn play(url: &str, game: &str, py: &'static str, script: &str, games: u32)
     });
     let (python, rust) = tokio::join!(python, rust);
     let python = python.expect("python task");
-    let rust = rust.expect("rust bot");
+    let rust = rust.expect("rust cogling");
     assert!(
         python.status.success(),
-        "python bot failed: {}",
+        "python cogling failed: {}",
         String::from_utf8_lossy(&python.stderr)
     );
     assert_eq!(rust.len(), games as usize);
@@ -75,12 +75,12 @@ async fn play(url: &str, game: &str, py: &'static str, script: &str, games: u32)
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn rust_and_python_bots_play_both_games() {
+async fn rust_and_python_coglings_play_both_games() {
     let Some(py) = python() else {
         eprintln!("skipping: python3 not found");
         return;
     };
-    let dir = std::env::temp_dir().join(format!("ogap-e2e-{}", GameId::new()));
+    let dir = std::env::temp_dir().join(format!("cogling-e2e-{}", GameId::new()));
     let logs = FileLogStore::new(&dir).expect("log dir");
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
@@ -93,8 +93,8 @@ async fn rust_and_python_bots_play_both_games() {
     );
     tokio::spawn(server.serve(listener, std::future::pending()));
 
-    play(&url, "tictactoe", py, "random_bot.py", 3).await;
-    play(&url, "connect4", py, "rules_bot.py", 3).await;
+    play(&url, "tictactoe", py, "random_cogling.py", 3).await;
+    play(&url, "connect4", py, "rules_cogling.py", 3).await;
 
     // Logs are flushed when sessions end; allow them a moment.
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -104,16 +104,16 @@ async fn rust_and_python_bots_play_both_games() {
         .collect();
     assert_eq!(files.len(), 6);
     for file in files {
-        let log = ogap_cli::read_log(&file).expect("read log");
+        let log = cogling_cli::read_log(&file).expect("read log");
         let names: Vec<&str> = log
             .header()
             .players
             .iter()
-            .map(|p| p.bot.name.as_str())
+            .map(|p| p.cogling.name.as_str())
             .collect();
         assert!(names.contains(&"rust-rules"), "{names:?}");
         let mut out = Vec::new();
-        ogap_cli::replay(
+        cogling_cli::replay(
             &ReplayArgs {
                 file,
                 view: "public".into(),

@@ -1,4 +1,4 @@
-//! Game-engine contract for the Open Game Agent Platform.
+//! Game-engine contract for Cogling Challenge.
 //!
 //! This crate is deliberately free of IO, async and networking. It defines:
 //!

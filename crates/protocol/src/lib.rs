@@ -1,6 +1,6 @@
-//! The bot communication protocol, version [`PROTOCOL_VERSION`].
+//! The cogling communication protocol, version [`PROTOCOL_VERSION`].
 //!
-//! Bots talk to the server over a WebSocket using JSON text frames. Every
+//! Coglings talk to the server over a WebSocket using JSON text frames. Every
 //! frame is one message object with a `"type"` discriminator. See
 //! `docs/protocol.md` for the full specification and lifecycle, and
 //! [`json_schema`] for a machine-readable schema.
@@ -11,10 +11,11 @@
 
 mod ids;
 
+pub use cogling_game_core::{ForfeitReason, GameResult, Rank, Seat, SeatCount};
 pub use ids::{
-    ApiKey, BotInfo, BotInfoError, BotName, BotVersion, DecisionId, GameId, ResumeToken,
+    ApiKey, CoglingInfo, CoglingInfoError, CoglingName, CoglingVersion, DecisionId, GameId,
+    ResumeToken,
 };
-pub use ogap_game_core::{ForfeitReason, GameResult, Rank, Seat, SeatCount};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -40,8 +41,8 @@ pub enum ObservationMode {
 pub struct PlayerSlot {
     /// The seat.
     pub seat: Seat,
-    /// The bot occupying it.
-    pub bot: BotInfo,
+    /// The cogling occupying it.
+    pub cogling: CoglingInfo,
 }
 
 /// Server limits announced in `welcome`.
@@ -53,22 +54,22 @@ pub struct Limits {
     pub max_messages_per_second: u32,
 }
 
-/// Messages sent by bots.
+/// Messages sent by coglings.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum ClientMessage {
     /// First message on every connection.
     Hello {
-        /// Protocol version the bot speaks; must equal [`PROTOCOL_VERSION`].
+        /// Protocol version the cogling speaks; must equal [`PROTOCOL_VERSION`].
         protocol: u32,
         /// Self-declared identity.
-        bot: BotInfo,
+        cogling: CoglingInfo,
         /// Developer API key; required in hosted mode, ignored in standalone.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         api_key: Option<ApiKey>,
     },
-    /// Creates a lobby game that bots can `join` by id.
+    /// Creates a lobby game that coglings can `join` by id.
     CreateGame {
         /// Game id, e.g. `"connect4"`.
         game: String,
@@ -97,7 +98,7 @@ pub enum ClientMessage {
         /// Seat count; defaults to the game's minimum.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         seats: Option<SeatCount>,
-        /// Game configuration; only bots asking for the same configuration
+        /// Game configuration; only coglings asking for the same configuration
         /// are matched together.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         config: Option<Value>,
@@ -150,7 +151,7 @@ pub enum RejectCode {
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum ErrorCode {
-    /// The bot's protocol version is not supported.
+    /// The cogling's protocol version is not supported.
     ProtocolVersion,
     /// The frame is not a valid message.
     Malformed,
@@ -358,7 +359,7 @@ impl ServerMessage {
 /// # Examples
 ///
 /// ```
-/// let schema = ogap_protocol::json_schema();
+/// let schema = cogling_protocol::json_schema();
 /// assert!(schema["client_message"].is_object());
 /// assert!(schema["server_message"].is_object());
 /// ```
@@ -373,7 +374,7 @@ pub fn json_schema() -> Value {
 
 #[cfg(test)]
 mod tests {
-    use ogap_game_core::{ForfeitPolicy, Seat};
+    use cogling_game_core::{ForfeitPolicy, Seat};
     use proptest::prelude::*;
     use serde_json::json;
 
@@ -383,15 +384,15 @@ mod tests {
         "0192f6a0-0000-7000-8000-000000000001".parse().unwrap()
     }
 
-    fn bot() -> BotInfo {
-        BotInfo::new("Strategist", Some("2.3.1")).unwrap()
+    fn cogling() -> CoglingInfo {
+        CoglingInfo::new("Strategist", Some("2.3.1")).unwrap()
     }
 
     fn client_examples() -> Vec<ClientMessage> {
         vec![
             ClientMessage::Hello {
                 protocol: PROTOCOL_VERSION,
-                bot: bot(),
+                cogling: cogling(),
                 api_key: None,
             },
             ClientMessage::CreateGame {
@@ -450,11 +451,11 @@ mod tests {
                 players: vec![
                     PlayerSlot {
                         seat: Seat::FIRST,
-                        bot: bot(),
+                        cogling: cogling(),
                     },
                     PlayerSlot {
                         seat: Seat::SECOND,
-                        bot: BotInfo::new("random", None).unwrap(),
+                        cogling: CoglingInfo::new("random", None).unwrap(),
                     },
                 ],
                 resume_token: ResumeToken::new("s3cret"),
@@ -531,9 +532,10 @@ mod tests {
         assert!(ClientMessage::from_json(r#"{"type":"teleport"}"#).is_err());
         assert!(ClientMessage::from_json(r#"{"type":"join"}"#).is_err());
         assert!(ClientMessage::from_json(r#"{"type":"join","game_id":"x"}"#).is_err());
-        // Invalid bot identity is rejected at parse time.
+        // Invalid cogling identity is rejected at parse time.
         assert!(
-            ClientMessage::from_json(r#"{"type":"hello","protocol":1,"bot":{"name":""}}"#).is_err()
+            ClientMessage::from_json(r#"{"type":"hello","protocol":1,"cogling":{"name":""}}"#)
+                .is_err()
         );
         // Unknown fields are ignored for forward compatibility.
         let msg = ClientMessage::from_json(r#"{"type":"ping","extra":true}"#).unwrap();

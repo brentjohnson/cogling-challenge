@@ -7,15 +7,15 @@
 
 use std::time::Instant;
 
-use ogap_eventlog::{
+use cogling_eventlog::{
     EventBody, Header, HeaderKind, LOG_FORMAT, LogError, LogSink, LogStore, PlayerRecord,
     SeatStats, Source, unix_ms,
 };
-use ogap_game_core::{
+use cogling_game_core::{
     Agent, ConfigError, ForfeitPolicy, ForfeitReason, Game, GameResult, GameRng, Rank, SeatCount,
     Seed, Setup, StateHash, Status,
 };
-use ogap_protocol::{BotInfo, BotInfoError, GameId};
+use cogling_protocol::{CoglingInfo, CoglingInfoError, GameId};
 use rayon::prelude::*;
 use serde::Serialize;
 use thiserror::Error;
@@ -41,9 +41,9 @@ pub enum SimError {
     /// Writing a log failed.
     #[error(transparent)]
     Log(#[from] LogError),
-    /// An agent label is not a valid bot name.
+    /// An agent label is not a valid cogling name.
     #[error("invalid agent label: {0}")]
-    Label(#[from] BotInfoError),
+    Label(#[from] CoglingInfoError),
     /// The engine failed to serialize a value.
     #[error("engine serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
@@ -170,17 +170,17 @@ pub struct Entrant<G: Game> {
 
 impl<G: Game> Entrant<G> {
     /// Creates an entrant. `label` identifies it in reports and logs and must
-    /// be a valid bot name.
+    /// be a valid cogling name.
     ///
     /// # Errors
     ///
-    /// [`BotInfoError`] if the label is not a valid bot name.
+    /// [`CoglingInfoError`] if the label is not a valid cogling name.
     pub fn new(
         label: impl Into<String>,
         make: impl Fn() -> Box<dyn Agent<G>> + Send + Sync + 'static,
-    ) -> Result<Self, BotInfoError> {
+    ) -> Result<Self, CoglingInfoError> {
         let label = label.into();
-        BotInfo::new(label.as_str(), None)?;
+        CoglingInfo::new(label.as_str(), None)?;
         Ok(Self {
             label,
             make: Box::new(make),
@@ -412,10 +412,10 @@ fn sim_header<G: Game>(
             let label = entrants.get(e).map_or("unknown", |ent| ent.label.as_str());
             Ok(PlayerRecord {
                 seat,
-                bot: BotInfo::new(label, Some("builtin"))?,
+                cogling: CoglingInfo::new(label, Some("builtin"))?,
             })
         })
-        .collect::<Result<Vec<_>, BotInfoError>>()?;
+        .collect::<Result<Vec<_>, CoglingInfoError>>()?;
     Ok(Header {
         kind: HeaderKind::Header,
         log_format: LOG_FORMAT,
@@ -487,10 +487,10 @@ fn aggregate<G: Game>(
 mod tests {
     use std::io::Cursor;
 
-    use ogap_connect4::ConnectFour;
-    use ogap_eventlog::{GameLog, MemoryLogStore, Replayer};
-    use ogap_game_core::{GameRegistry, RandomAgent, Seat};
-    use ogap_tictactoe::TicTacToe;
+    use cogling_connect4::ConnectFour;
+    use cogling_eventlog::{GameLog, MemoryLogStore, Replayer};
+    use cogling_game_core::{GameRegistry, RandomAgent, Seat};
+    use cogling_tictactoe::TicTacToe;
 
     use super::*;
 
@@ -500,7 +500,8 @@ mod tests {
             .map(|&n| {
                 let owned = n.to_owned();
                 Entrant::new(n, move || {
-                    ogap_tictactoe::agents::by_name(&owned).unwrap_or_else(|| Box::new(RandomAgent))
+                    cogling_tictactoe::agents::by_name(&owned)
+                        .unwrap_or_else(|| Box::new(RandomAgent))
                 })
                 .unwrap()
             })
@@ -513,7 +514,8 @@ mod tests {
             .map(|&n| {
                 let owned = n.to_owned();
                 Entrant::new(n, move || {
-                    ogap_connect4::agents::by_name(&owned).unwrap_or_else(|| Box::new(RandomAgent))
+                    cogling_connect4::agents::by_name(&owned)
+                        .unwrap_or_else(|| Box::new(RandomAgent))
                 })
                 .unwrap()
             })
@@ -619,12 +621,12 @@ mod tests {
         }
         fn act(
             &mut self,
-            _: &ogap_tictactoe::PlayerView,
-            _: &[ogap_tictactoe::Action],
+            _: &cogling_tictactoe::PlayerView,
+            _: &[cogling_tictactoe::Action],
             _: &mut GameRng,
-        ) -> Option<ogap_tictactoe::Action> {
-            Some(ogap_tictactoe::Action {
-                cell: ogap_tictactoe::Cell::new(0).ok()?,
+        ) -> Option<cogling_tictactoe::Action> {
+            Some(cogling_tictactoe::Action {
+                cell: cogling_tictactoe::Cell::new(0).ok()?,
             })
         }
     }

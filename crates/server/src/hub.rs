@@ -4,9 +4,9 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
-use ogap_eventlog::LogStore;
-use ogap_game_core::{GameRegistry, GameRng, Seat, SeatCount, Seed};
-use ogap_protocol::{ErrorCode, GameId, ObservationMode, ResumeToken, ServerMessage};
+use cogling_eventlog::LogStore;
+use cogling_game_core::{GameRegistry, GameRng, Seat, SeatCount, Seed};
+use cogling_protocol::{ErrorCode, GameId, ObservationMode, ResumeToken, ServerMessage};
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
@@ -17,7 +17,7 @@ use crate::session::{
     self, Command, ConnId, Directory, GameHandle, GameSpec, JoinError, Participant, SessionEnv,
 };
 
-/// Errors surfaced to bots as `error` messages.
+/// Errors surfaced to coglings as `error` messages.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub(crate) enum HubError {
     #[error("unknown game {0:?}")]
@@ -48,7 +48,7 @@ impl HubError {
     }
 }
 
-/// Bots are matched only with others asking for the same game, seat count
+/// Coglings are matched only with others asking for the same game, seat count
 /// and canonical configuration.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct QueueKey {
@@ -57,7 +57,7 @@ struct QueueKey {
     config: String,
 }
 
-/// A request for a game, as sent by a bot, before validation.
+/// A request for a game, as sent by a cogling, before validation.
 #[derive(Debug, Clone, Copy, Default)]
 pub(crate) struct GameRequest<'a> {
     pub(crate) game: &'a str,
@@ -227,8 +227,8 @@ impl Hub {
         }
     }
 
-    /// Enters the quick-match queue. Sends `queued` to the bot first, then
-    /// starts a game if enough compatible bots are waiting. Seats are
+    /// Enters the quick-match queue. Sends `queued` to the cogling first, then
+    /// starts a game if enough compatible coglings are waiting. Seats are
     /// assigned in random order.
     pub(crate) fn enqueue(&self, spec: GameSpec, player: Participant) -> Result<(), HubError> {
         let key = QueueKey {
@@ -301,11 +301,11 @@ mod tests {
     use std::io::Cursor;
     use std::time::Duration;
 
-    use ogap_connect4::ConnectFour;
-    use ogap_eventlog::{EventBody, GameLog, MemoryLogStore, Replayer};
-    use ogap_game_core::{ForfeitReason, GameResult};
-    use ogap_protocol::{BotInfo, DecisionId, RejectCode, ServerMessage};
-    use ogap_tictactoe::TicTacToe;
+    use cogling_connect4::ConnectFour;
+    use cogling_eventlog::{EventBody, GameLog, MemoryLogStore, Replayer};
+    use cogling_game_core::{ForfeitReason, GameResult};
+    use cogling_protocol::{CoglingInfo, DecisionId, RejectCode, ServerMessage};
+    use cogling_tictactoe::TicTacToe;
     use serde_json::json;
     use tokio::sync::mpsc;
     use tokio::time::Instant;
@@ -330,17 +330,17 @@ mod tests {
         hub_with(ServerConfig::default())
     }
 
-    struct TestBot {
+    struct TestCogling {
         player: Participant,
         rx: mpsc::Receiver<ServerMessage>,
     }
 
-    impl TestBot {
+    impl TestCogling {
         fn new(hub: &Hub, name: &str) -> Self {
             let (tx, rx) = mpsc::channel(64);
             Self {
                 player: Participant {
-                    bot: BotInfo::new(name, Some("1.0")).unwrap(),
+                    cogling: CoglingInfo::new(name, Some("1.0")).unwrap(),
                     outbox: Outbox::new(hub.next_conn_id(), tx),
                 },
                 rx,
@@ -436,8 +436,8 @@ mod tests {
     /// Returns the game id and `a`'s resume token.
     async fn start_ttt_with_token(
         hub: &Hub,
-        a: &mut TestBot,
-        b: &mut TestBot,
+        a: &mut TestCogling,
+        b: &mut TestCogling,
         think_ms: u64,
     ) -> (GameId, ResumeToken) {
         let id = hub.create_game(ttt_spec(hub, think_ms)).unwrap();
@@ -450,30 +450,37 @@ mod tests {
         (id, token)
     }
 
-    async fn start_ttt(hub: &Hub, a: &mut TestBot, b: &mut TestBot, think_ms: u64) -> GameId {
+    async fn start_ttt(
+        hub: &Hub,
+        a: &mut TestCogling,
+        b: &mut TestCogling,
+        think_ms: u64,
+    ) -> GameId {
         start_ttt_with_token(hub, a, b, think_ms).await.0
     }
 
     #[tokio::test(start_paused = true)]
     async fn lobby_game_plays_to_completion_and_replays() {
         let (hub, logs) = hub();
-        let mut a = TestBot::new(&hub, "alpha");
-        let mut b = TestBot::new(&hub, "beta");
+        let mut a = TestCogling::new(&hub, "alpha");
+        let mut b = TestCogling::new(&hub, "beta");
         let id = start_ttt(&hub, &mut a, &mut b, 1_000).await;
 
         // X takes the top row while O plays the middle row.
-        for (bot_is_a, cell) in [(true, 0), (false, 3), (true, 1), (false, 4), (true, 2)] {
-            let (bot, seat) = if bot_is_a {
+        for (cogling_is_a, cell) in [(true, 0), (false, 3), (true, 1), (false, 4), (true, 2)] {
+            let (cogling, seat) = if cogling_is_a {
                 (&mut a, Seat::FIRST)
             } else {
                 (&mut b, Seat::SECOND)
             };
-            let (decision, remaining, legal) = bot.decide().await;
+            let (decision, remaining, legal) = cogling.decide().await;
             assert_eq!(remaining, 1_000);
             assert!(legal.contains(&json!({ "cell": cell })));
-            bot.act(&hub, id, seat, decision, json!({ "cell": cell }))
+            cogling
+                .act(&hub, id, seat, decision, json!({ "cell": cell }))
                 .await;
-            bot.expect(|m| matches!(m, ServerMessage::ActionAccepted { .. }).then_some(()))
+            cogling
+                .expect(|m| matches!(m, ServerMessage::ActionAccepted { .. }).then_some(()))
                 .await;
         }
         let result = a.game_over().await;
@@ -487,7 +494,7 @@ mod tests {
         tokio::task::yield_now().await;
         assert!(hub.handle(id).is_none());
         let log = GameLog::read(Cursor::new(&logs.logs()[0])).unwrap();
-        assert_eq!(log.header().players[0].bot.name.as_str(), "alpha");
+        assert_eq!(log.header().players[0].cogling.name.as_str(), "alpha");
         assert_eq!(log.header().think_time_ms, Some(1_000));
         assert_eq!(log.actions().count(), 5);
         Replayer::new(&hub.registry, &log)
@@ -499,8 +506,8 @@ mod tests {
     #[tokio::test(start_paused = true)]
     async fn invalid_actions_are_rejected_without_resetting_the_clock() {
         let (hub, logs) = hub();
-        let mut a = TestBot::new(&hub, "alpha");
-        let mut b = TestBot::new(&hub, "beta");
+        let mut a = TestCogling::new(&hub, "alpha");
+        let mut b = TestCogling::new(&hub, "beta");
         let id = start_ttt(&hub, &mut a, &mut b, 1_000).await;
         let (decision, _, _) = a.decide().await;
 
@@ -599,8 +606,8 @@ mod tests {
     #[tokio::test(start_paused = true)]
     async fn deadline_expiry_forfeits() {
         let (hub, _) = hub();
-        let mut a = TestBot::new(&hub, "alpha");
-        let mut b = TestBot::new(&hub, "beta");
+        let mut a = TestCogling::new(&hub, "alpha");
+        let mut b = TestCogling::new(&hub, "beta");
         let id = start_ttt(&hub, &mut a, &mut b, 250).await;
         a.decide().await;
         let started = Instant::now();
@@ -630,8 +637,8 @@ mod tests {
     #[tokio::test(start_paused = true)]
     async fn reconnect_resumes_with_the_running_clock() {
         let (hub, _) = hub();
-        let mut a = TestBot::new(&hub, "alpha");
-        let mut b = TestBot::new(&hub, "beta");
+        let mut a = TestCogling::new(&hub, "alpha");
+        let mut b = TestCogling::new(&hub, "beta");
         let (id, token) = start_ttt_with_token(&hub, &mut a, &mut b, 1_000).await;
         let (decision, _, _) = a.decide().await;
 
@@ -650,7 +657,7 @@ mod tests {
             .await;
         tokio::time::advance(Duration::from_millis(300)).await;
 
-        let mut a2 = TestBot::new(&hub, "alpha");
+        let mut a2 = TestCogling::new(&hub, "alpha");
         let (_, seat) = hub
             .reconnect(id, token.clone(), a2.player.clone())
             .await
@@ -684,7 +691,7 @@ mod tests {
         .await;
 
         // Reclaiming again from a third connection supersedes the second.
-        let mut a3 = TestBot::new(&hub, "alpha");
+        let mut a3 = TestCogling::new(&hub, "alpha");
         hub.reconnect(id, token, a3.player.clone()).await.unwrap();
         a2.expect(|m| {
             matches!(
@@ -707,8 +714,8 @@ mod tests {
             reconnect_grace: Duration::from_millis(200),
             ..ServerConfig::default()
         });
-        let mut a = TestBot::new(&hub, "alpha");
-        let mut b = TestBot::new(&hub, "beta");
+        let mut a = TestCogling::new(&hub, "alpha");
+        let mut b = TestCogling::new(&hub, "beta");
         let id = start_ttt(&hub, &mut a, &mut b, 5_000).await;
         a.decide().await;
         // Seat 1 is not on turn but disconnects and never returns.
@@ -737,7 +744,7 @@ mod tests {
             lobby_timeout: Duration::from_secs(5),
             ..ServerConfig::default()
         });
-        let mut a = TestBot::new(&hub, "alpha");
+        let mut a = TestCogling::new(&hub, "alpha");
         let id = hub.create_game(ttt_spec(&hub, 1_000)).unwrap();
         hub.join(id, a.player.clone()).await.unwrap();
         let (filled, total) = a
@@ -760,8 +767,8 @@ mod tests {
         );
 
         // A full lobby rejects a third player.
-        let mut b = TestBot::new(&hub, "beta");
-        let mut c = TestBot::new(&hub, "gamma");
+        let mut b = TestCogling::new(&hub, "beta");
+        let mut c = TestCogling::new(&hub, "gamma");
         let id = start_ttt(&hub, &mut a, &mut b, 1_000).await;
         assert_eq!(
             hub.join(id, c.player.clone()).await.unwrap_err(),
@@ -771,11 +778,11 @@ mod tests {
     }
 
     #[tokio::test(start_paused = true)]
-    async fn quick_match_pairs_compatible_bots() {
+    async fn quick_match_pairs_compatible_coglings() {
         let (hub, _) = hub();
-        let mut a = TestBot::new(&hub, "alpha");
-        let mut b = TestBot::new(&hub, "beta");
-        let mut c = TestBot::new(&hub, "gamma");
+        let mut a = TestCogling::new(&hub, "alpha");
+        let mut b = TestCogling::new(&hub, "beta");
+        let mut c = TestCogling::new(&hub, "gamma");
         let spec = |config| {
             hub.spec(GameRequest {
                 game: "connect4",
@@ -796,7 +803,7 @@ mod tests {
         let (gb, sb, _) = b.game_start().await;
         assert_eq!(ga, gb);
         assert_ne!(sa, sb);
-        // The bot with a different config is still waiting; leaving clears it.
+        // The cogling with a different config is still waiting; leaving clears it.
         assert_eq!(hub.status().queued, 1);
         assert!(matches!(c.recv().await, ServerMessage::Queued { .. }));
         hub.dequeue(c.player.outbox.conn);

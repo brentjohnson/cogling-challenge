@@ -81,7 +81,7 @@ pub enum OutcomeError {
 /// # Examples
 ///
 /// ```
-/// use ogap_game_core::ranks_from_keys;
+/// use cogling_game_core::ranks_from_keys;
 ///
 /// let ranks: Vec<u8> = ranks_from_keys(&[10, 30, 30, 5]).iter().map(|r| r.get()).collect();
 /// assert_eq!(ranks, [3, 1, 1, 4]);
@@ -242,10 +242,10 @@ impl<S> Status<S> {
 pub enum ForfeitReason {
     /// The decision deadline expired.
     Timeout,
-    /// The bot stayed disconnected past the reconnect grace period.
+    /// The cogling stayed disconnected past the reconnect grace period.
     Disconnected,
     /// An in-process agent failed to produce a legal action (simulation only;
-    /// networked bots may retry until the deadline instead).
+    /// networked coglings may retry until the deadline instead).
     InvalidAction,
 }
 

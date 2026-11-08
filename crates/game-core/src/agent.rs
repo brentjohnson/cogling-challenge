@@ -1,6 +1,6 @@
 //! In-process agents for headless simulation.
 //!
-//! Agents see exactly what a networked bot would see: their seat's
+//! Agents see exactly what a networked cogling would see: their seat's
 //! [`Game::PlayerView`] and the legal actions. They never get the
 //! authoritative state, so information boundaries hold in simulation too.
 

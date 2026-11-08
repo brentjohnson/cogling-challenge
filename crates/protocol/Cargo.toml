@@ -1,6 +1,6 @@
 [package]
-name = "ogap-protocol"
-description = "Versioned WebSocket bot protocol messages for the Open Game Agent Platform"
+name = "cogling-protocol"
+description = "Versioned WebSocket cogling protocol messages for Cogling Challenge"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,7 +8,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-ogap-game-core = { workspace = true, features = ["schema"] }
+cogling-game-core = { workspace = true, features = ["schema"] }
 schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true

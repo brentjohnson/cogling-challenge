@@ -1,6 +1,6 @@
 //! Reference agents for Tic-Tac-Toe.
 
-use ogap_game_core::{Agent, GameRng, RandomAgent};
+use cogling_game_core::{Agent, GameRng, RandomAgent};
 
 use crate::{Action, Board, Cell, Mark, PlayerView, TicTacToe};
 
@@ -23,7 +23,7 @@ pub fn by_name(name: &str) -> Option<Box<dyn Agent<TicTacToe>>> {
 pub struct Rules;
 
 /// The move [`Rules`] would make on `board` playing `mark`, or `None` if the
-/// board is full. Exposed so networked example bots can reuse it.
+/// board is full. Exposed so networked example coglings can reuse it.
 pub fn rules_move(board: &Board, mark: Mark, rng: &mut GameRng) -> Option<Cell> {
     let empty: Vec<Cell> = board.empty_cells().collect();
     if let Some(&win) = empty.iter().find(|c| board.wins_with(**c, mark)) {
@@ -56,7 +56,7 @@ impl Agent<TicTacToe> for Rules {
 
 #[cfg(test)]
 mod tests {
-    use ogap_game_core::Seed;
+    use cogling_game_core::Seed;
 
     use super::*;
 

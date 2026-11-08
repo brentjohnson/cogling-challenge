@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Rule-based bot for Tic-Tac-Toe and Connect Four, working from observations only.
+"""Rule-based cogling for Tic-Tac-Toe and Connect Four, working from observations only.
 
 Tic-Tac-Toe: win, block, centre, corners, edges.
 Connect Four: win, block, avoid handing the opponent a win, prefer the centre.
 
-    python3 rules_bot.py --game connect4 --games 5
+    python3 rules_cogling.py --game connect4 --games 5
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from __future__ import annotations
 import random
 from typing import Optional
 
-from ogap_client import Bot, Decision, GameInfo, main_args, run
+from cogling_client import Cogling, Decision, GameInfo, main_args, run
 
 TTT_LINES = [(0, 1, 2), (3, 4, 5), (6, 7, 8), (0, 3, 6), (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6)]
 
@@ -103,14 +103,14 @@ def c4_move(board: C4Board, me: int, rng: random.Random) -> Optional[int]:
     return rng.choice([c for c in pool if abs(2 * c - centre) == best])
 
 
-class RulesBot(Bot):
+class RulesCogling(Cogling):
     def __init__(self, seed: int):
         self.rng = random.Random(seed)
         self.game = None
 
     def on_game_start(self, info: GameInfo) -> None:
         if info.game not in ("tictactoe", "connect4"):
-            raise ValueError(f"rules bot does not know {info.game}")
+            raise ValueError(f"rules cogling does not know {info.game}")
         self.game = info.game
 
     def decide(self, decision: Decision):
@@ -123,7 +123,7 @@ class RulesBot(Bot):
 def main() -> int:
     args = main_args(__doc__)
     results = run(
-        RulesBot(args.seed),
+        RulesCogling(args.seed),
         args.url,
         name=args.name or "python-rules",
         version=args.version,

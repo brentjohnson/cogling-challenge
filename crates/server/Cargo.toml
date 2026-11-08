@@ -1,6 +1,6 @@
 [package]
-name = "ogap-server"
-description = "Game server (sessions, deadlines, WebSocket transport) for the Open Game Agent Platform"
+name = "cogling-server"
+description = "Game server (sessions, deadlines, WebSocket transport) for Cogling Challenge"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,9 +10,9 @@ publish.workspace = true
 [dependencies]
 axum.workspace = true
 futures-util.workspace = true
-ogap-eventlog.workspace = true
-ogap-game-core.workspace = true
-ogap-protocol.workspace = true
+cogling-eventlog.workspace = true
+cogling-game-core.workspace = true
+cogling-protocol.workspace = true
 rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -23,8 +23,8 @@ tracing.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
-ogap-connect4.workspace = true
-ogap-tictactoe.workspace = true
+cogling-connect4.workspace = true
+cogling-tictactoe.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
 tokio-tungstenite.workspace = true
 

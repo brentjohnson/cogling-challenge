@@ -5,9 +5,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::extract::ws::{Message, WebSocket};
+use cogling_game_core::Seat;
+use cogling_protocol::{
+    ClientMessage, CoglingInfo, ErrorCode, GameId, PROTOCOL_VERSION, ServerMessage,
+};
 use futures_util::{SinkExt, StreamExt};
-use ogap_game_core::Seat;
-use ogap_protocol::{BotInfo, ClientMessage, ErrorCode, GameId, PROTOCOL_VERSION, ServerMessage};
 use tokio::sync::mpsc;
 use tokio::time::{Instant, sleep_until};
 use tracing::{debug, info};
@@ -78,7 +80,7 @@ struct Conn {
     conn: ConnId,
     outbox: Outbox,
     phase: Phase,
-    bot: Option<BotInfo>,
+    cogling: Option<CoglingInfo>,
     violations: u32,
     bucket: TokenBucket,
 }
@@ -89,8 +91,8 @@ impl Conn {
     }
 
     fn participant(&self) -> Option<Participant> {
-        self.bot.clone().map(|bot| Participant {
-            bot,
+        self.cogling.clone().map(|cogling| Participant {
+            cogling,
             outbox: self.outbox.clone(),
         })
     }
@@ -237,7 +239,7 @@ impl Conn {
                 };
                 match self.hub.reconnect(game_id, resume_token, player).await {
                     Ok((handle, seat)) => {
-                        info!(conn = self.conn, %game_id, %seat, "bot reconnected");
+                        info!(conn = self.conn, %game_id, %seat, "cogling reconnected");
                         self.phase = Phase::InGame {
                             game_id,
                             seat,
@@ -254,7 +256,10 @@ impl Conn {
     }
 
     fn on_hello(&mut self, msg: ClientMessage) -> Flow {
-        let ClientMessage::Hello { protocol, bot, .. } = msg else {
+        let ClientMessage::Hello {
+            protocol, cogling, ..
+        } = msg
+        else {
             self.send(ServerMessage::error(
                 ErrorCode::HelloRequired,
                 "the first message must be hello",
@@ -265,13 +270,13 @@ impl Conn {
         if protocol != PROTOCOL_VERSION {
             self.send(ServerMessage::error(
                 ErrorCode::ProtocolVersion,
-                format!("server speaks protocol {PROTOCOL_VERSION}, bot sent {protocol}"),
+                format!("server speaks protocol {PROTOCOL_VERSION}, cogling sent {protocol}"),
                 true,
             ));
             return Flow::Close;
         }
-        info!(conn = self.conn, %bot, "bot connected");
-        self.bot = Some(bot);
+        info!(conn = self.conn, %cogling, "cogling connected");
+        self.cogling = Some(cogling);
         self.phase = Phase::Idle;
         self.send(ServerMessage::Welcome {
             protocol: PROTOCOL_VERSION,
@@ -356,7 +361,7 @@ pub(crate) async fn handle_socket(hub: Arc<Hub>, socket: WebSocket, _guard: Conn
         conn: conn_id,
         outbox: Outbox::new(conn_id, tx),
         phase: Phase::AwaitHello,
-        bot: None,
+        cogling: None,
         violations: 0,
         bucket: TokenBucket::new(hub.config.max_messages_per_second, now),
         hub,

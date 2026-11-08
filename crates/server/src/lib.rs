@@ -1,9 +1,9 @@
-//! The game server: hosts game sessions and connects bots over WebSockets.
+//! The game server: hosts game sessions and connects coglings over WebSockets.
 //!
 //! The same server runs in standalone mode (no auth, no database) and will be
 //! embedded by the hosted platform. Endpoints:
 //!
-//! - `GET /ws` — the bot protocol (see `docs/protocol.md`);
+//! - `GET /ws` — the cogling protocol (see `docs/protocol.md`);
 //! - `GET /` — JSON status: available games, live sessions, connections.
 //!
 //! # Examples
@@ -11,9 +11,9 @@
 //! ```no_run
 //! # async fn run() -> std::io::Result<()> {
 //! use std::sync::Arc;
-//! use ogap_eventlog::NullLogStore;
-//! use ogap_game_core::GameRegistry;
-//! use ogap_server::{Server, ServerConfig};
+//! use cogling_eventlog::NullLogStore;
+//! use cogling_game_core::GameRegistry;
+//! use cogling_server::{Server, ServerConfig};
 //!
 //! let server = Server::new(GameRegistry::new(), ServerConfig::default(), Arc::new(NullLogStore));
 //! let listener = tokio::net::TcpListener::bind("127.0.0.1:7878").await?;
@@ -36,9 +36,9 @@ use axum::extract::{State, WebSocketUpgrade};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use ogap_eventlog::LogStore;
-use ogap_game_core::{GameInfo, GameRegistry};
-use ogap_protocol::PROTOCOL_VERSION;
+use cogling_eventlog::LogStore;
+use cogling_game_core::{GameInfo, GameRegistry};
+use cogling_protocol::PROTOCOL_VERSION;
 use serde::Serialize;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
@@ -63,7 +63,7 @@ struct StatusBody<'a> {
 
 async fn status(State(hub): State<Arc<Hub>>) -> Response {
     let body = StatusBody {
-        server: "ogap",
+        server: "cogling",
         version: env!("CARGO_PKG_VERSION"),
         protocol: PROTOCOL_VERSION,
         games: hub.registry.iter().map(|g| g.info()).collect(),

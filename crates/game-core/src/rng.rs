@@ -67,7 +67,7 @@ const fn splitmix64(state: &mut u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// use ogap_game_core::{GameRng, Seed};
+/// use cogling_game_core::{GameRng, Seed};
 ///
 /// let mut a = GameRng::from_seed(Seed::new(7));
 /// let mut b = GameRng::from_seed(Seed::new(7));

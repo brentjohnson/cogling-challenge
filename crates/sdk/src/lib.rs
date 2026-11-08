@@ -1,6 +1,6 @@
-//! Rust client SDK for writing bots.
+//! Rust client SDK for writing coglings.
 //!
-//! Implement [`Bot`] (usually just [`Bot::decide`]) and call [`run`]. The SDK
+//! Implement [`Cogling`] (usually just [`Cogling::decide`]) and call [`run`]. The SDK
 //! handles the protocol: `hello`, matchmaking, decisions, retries after
 //! rejected actions, reconnecting after a dropped connection, and playing
 //! several games in a row.
@@ -8,22 +8,22 @@
 //! # Examples
 //!
 //! ```no_run
-//! use ogap_bot_sdk::{Bot, BotError, ClientConfig, Decision, Matchmaking, run};
-//! use ogap_protocol::BotInfo;
+//! use cogling_sdk::{Cogling, CoglingError, ClientConfig, Decision, Matchmaking, run};
+//! use cogling_protocol::CoglingInfo;
 //! use serde_json::Value;
 //!
 //! struct FirstLegal;
 //!
-//! impl Bot for FirstLegal {
-//!     fn decide(&mut self, d: &Decision) -> Result<Value, BotError> {
-//!         d.legal_actions()?.first().cloned().ok_or(BotError::NoLegalActions)
+//! impl Cogling for FirstLegal {
+//!     fn decide(&mut self, d: &Decision) -> Result<Value, CoglingError> {
+//!         d.legal_actions()?.first().cloned().ok_or(CoglingError::NoLegalActions)
 //!     }
 //! }
 //!
 //! # async fn go() -> Result<(), Box<dyn std::error::Error>> {
 //! let config = ClientConfig::new(
 //!     "ws://127.0.0.1:7878/ws",
-//!     BotInfo::new("first-legal", Some("1.0"))?,
+//!     CoglingInfo::new("first-legal", Some("1.0"))?,
 //!     Matchmaking::queue("tictactoe"),
 //! );
 //! let games = run(&config, &mut FirstLegal).await?;
@@ -34,12 +34,12 @@ pub mod strategies;
 
 use std::time::Duration;
 
-use futures_util::{SinkExt, StreamExt};
-use ogap_game_core::{GameResult, Seat, SeatCount};
-use ogap_protocol::{
-    ApiKey, BotInfo, ClientMessage, DecisionId, ErrorCode, GameId, ObservationMode,
+use cogling_game_core::{GameResult, Seat, SeatCount};
+use cogling_protocol::{
+    ApiKey, ClientMessage, CoglingInfo, DecisionId, ErrorCode, GameId, ObservationMode,
     PROTOCOL_VERSION, RejectCode, ResumeToken, ServerMessage,
 };
+use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
 use thiserror::Error;
 use tokio::net::TcpStream;
@@ -52,12 +52,12 @@ type Ws = WebSocketStream<MaybeTlsStream<TcpStream>>;
 /// Reconnect attempts after a dropped connection mid-game.
 const RECONNECT_ATTEMPTS: u32 = 5;
 
-/// A bot's decision failed.
+/// A cogling's decision failed.
 #[derive(Debug, Error)]
 #[non_exhaustive]
-pub enum BotError {
+pub enum CoglingError {
     /// The strategy needs legal actions but the game uses `state` mode.
-    #[error("this bot needs legal actions; use observation mode state_and_legal")]
+    #[error("this cogling needs legal actions; use observation mode state_and_legal")]
     LegalActionsRequired,
     /// There was nothing to choose from.
     #[error("no legal actions available")]
@@ -129,16 +129,16 @@ impl Decision {
     ///
     /// # Errors
     ///
-    /// [`BotError::LegalActionsRequired`] in `state` mode.
-    pub fn legal_actions(&self) -> Result<&[Value], BotError> {
+    /// [`CoglingError::LegalActionsRequired`] in `state` mode.
+    pub fn legal_actions(&self) -> Result<&[Value], CoglingError> {
         self.legal_actions
             .as_deref()
-            .ok_or(BotError::LegalActionsRequired)
+            .ok_or(CoglingError::LegalActionsRequired)
     }
 }
 
 /// A game-playing strategy.
-pub trait Bot: Send {
+pub trait Cogling: Send {
     /// Called when a game starts (or resumes after a reconnect).
     fn on_game_start(&mut self, _info: &GameInfo) {}
 
@@ -146,8 +146,8 @@ pub trait Bot: Send {
     ///
     /// # Errors
     ///
-    /// A [`BotError`] skips this decision; the bot will then time out.
-    fn decide(&mut self, decision: &Decision) -> Result<Value, BotError>;
+    /// A [`CoglingError`] skips this decision; the cogling will then time out.
+    fn decide(&mut self, decision: &Decision) -> Result<Value, CoglingError>;
 
     /// Called when an action was rejected. Return a replacement action to
     /// retry within the remaining time, or `None` to give up on this decision.
@@ -164,11 +164,11 @@ pub trait Bot: Send {
     fn on_game_over(&mut self, _result: &GameResult) {}
 }
 
-impl<B: Bot + ?Sized> Bot for Box<B> {
+impl<B: Cogling + ?Sized> Cogling for Box<B> {
     fn on_game_start(&mut self, info: &GameInfo) {
         (**self).on_game_start(info);
     }
-    fn decide(&mut self, decision: &Decision) -> Result<Value, BotError> {
+    fn decide(&mut self, decision: &Decision) -> Result<Value, CoglingError> {
         (**self).decide(decision)
     }
     fn on_rejected(
@@ -217,8 +217,8 @@ impl Matchmaking {
 pub struct ClientConfig {
     /// WebSocket URL, e.g. `ws://127.0.0.1:7878/ws`.
     pub url: String,
-    /// Bot identity.
-    pub bot: BotInfo,
+    /// Cogling identity.
+    pub cogling: CoglingInfo,
     /// API key (hosted mode).
     pub api_key: Option<ApiKey>,
     /// How to find games.
@@ -229,10 +229,10 @@ pub struct ClientConfig {
 
 impl ClientConfig {
     /// Settings for one game.
-    pub fn new(url: impl Into<String>, bot: BotInfo, matchmaking: Matchmaking) -> Self {
+    pub fn new(url: impl Into<String>, cogling: CoglingInfo, matchmaking: Matchmaking) -> Self {
         Self {
             url: url.into(),
-            bot,
+            cogling,
             api_key: None,
             matchmaking,
             games: 1,
@@ -240,7 +240,7 @@ impl ClientConfig {
     }
 }
 
-/// Result of one game from this bot's point of view.
+/// Result of one game from this cogling's point of view.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GameSummary {
     /// Session id.
@@ -272,7 +272,7 @@ impl Connection {
         let mut conn = Self { ws };
         conn.send(&ClientMessage::Hello {
             protocol: PROTOCOL_VERSION,
-            bot: config.bot.clone(),
+            cogling: config.cogling.clone(),
             api_key: config.api_key.clone(),
         })
         .await?;
@@ -339,15 +339,15 @@ struct InGame {
     pending: Option<Decision>,
 }
 
-/// Connects, finds games and plays them with `bot`.
+/// Connects, finds games and plays them with `cogling`.
 ///
 /// # Errors
 ///
 /// [`ClientError`] if the connection fails (and cannot be resumed) or the
 /// server reports a blocking error such as an unknown game.
-pub async fn run<B: Bot + ?Sized>(
+pub async fn run<B: Cogling + ?Sized>(
     config: &ClientConfig,
-    bot: &mut B,
+    cogling: &mut B,
 ) -> Result<Vec<GameSummary>, ClientError> {
     let target = match config.matchmaking {
         Matchmaking::Join(_) => 1,
@@ -361,7 +361,7 @@ pub async fn run<B: Bot + ?Sized>(
         if current.is_none() {
             find_game(&mut conn, config).await?;
         }
-        match play(&mut conn, bot, &mut current, &mut summaries).await {
+        match play(&mut conn, cogling, &mut current, &mut summaries).await {
             Ok(()) => {}
             Err(ClientError::Closed | ClientError::WebSocket(_)) if current.is_some() => {
                 conn = resume(config, current.as_ref()).await?;
@@ -412,9 +412,9 @@ async fn resume(config: &ClientConfig, game: Option<&InGame>) -> Result<Connecti
 }
 
 /// Processes messages until a game ends.
-async fn play<B: Bot + ?Sized>(
+async fn play<B: Cogling + ?Sized>(
     conn: &mut Connection,
-    bot: &mut B,
+    cogling: &mut B,
     current: &mut Option<InGame>,
     summaries: &mut Vec<GameSummary>,
 ) -> Result<(), ClientError> {
@@ -441,7 +441,7 @@ async fn play<B: Bot + ?Sized>(
                     observation_mode,
                 };
                 info!(%game_id, %seat, "game started");
-                bot.on_game_start(&info);
+                cogling.on_game_start(&info);
                 *current = Some(InGame {
                     info,
                     token: resume_token,
@@ -465,7 +465,7 @@ async fn play<B: Bot + ?Sized>(
                     observation,
                     legal_actions,
                 };
-                match bot.decide(&decision) {
+                match cogling.decide(&decision) {
                     Ok(action) => {
                         conn.send(&ClientMessage::Action {
                             game_id,
@@ -474,7 +474,7 @@ async fn play<B: Bot + ?Sized>(
                         })
                         .await?;
                     }
-                    Err(e) => warn!(error = %e, "bot could not decide"),
+                    Err(e) => warn!(error = %e, "cogling could not decide"),
                 }
                 game.pending = Some(decision);
             }
@@ -493,7 +493,7 @@ async fn play<B: Bot + ?Sized>(
                 else {
                     continue;
                 };
-                if let Some(action) = bot.on_rejected(decision, code, &message) {
+                if let Some(action) = cogling.on_rejected(decision, code, &message) {
                     conn.send(&ClientMessage::Action {
                         game_id,
                         decision_id,
@@ -505,7 +505,7 @@ async fn play<B: Bot + ?Sized>(
             ServerMessage::GameOver {
                 game_id, result, ..
             } => {
-                bot.on_game_over(&result);
+                cogling.on_game_over(&result);
                 if let Some(game) = current.take() {
                     info!(%game_id, ?result, "game over");
                     summaries.push(GameSummary {

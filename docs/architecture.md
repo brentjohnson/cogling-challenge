@@ -6,7 +6,7 @@ prerequisites. Dependencies point one way:
 ```
 games/* ──▶ game-core ◀── protocol ◀── eventlog ◀── sim
                  ▲            ▲            ▲
-                 └────────── server ───────┘ ◀── bot-sdk (tests) , cli
+                 └────────── server ───────┘ ◀── sdk (tests) , cli
 ```
 
 - **Engines** (`game-core`, `games/*`) are pure: no IO, async, clocks or
@@ -35,7 +35,7 @@ games/* ──▶ game-core ◀── protocol ◀── eventlog ◀── sim
 | A4 | Compound turns with large action spaces (e.g. placing or buying several things in one turn) are modelled as sequences of small atomic actions (`place X` … `done`), keeping legal-action lists small. |
 | A5 | `Status::ToAct` is a non-empty seat set, which permits simultaneous moves. Such engines must resolve them order-independently. |
 | A6 | One connection plays one game at a time, and may play several games one after another. |
-| A7 | **Hosted competitions use a pull pool**: idle connected bot instances are formed into tables, prioritising bots with the fewest games played toward a per-bot target, then the least-seen opponent pairs and seats. *(Phase 4.)* |
+| A7 | **Hosted competitions use a pull pool**: idle connected cogling instances are formed into tables, prioritising coglings with the fewest games played toward a per-cogling target, then the least-seen opponent pairs and seats. *(Phase 4.)* |
 | A8 | Replays require the exact engine version and ruleset recorded in the log. |
 | A9 | Full logs are served only after a game ends. Spectators get public views. |
 | A10 | Raw ranks and game-specific scores are stored. Ratings (Weng-Lin/OpenSkill style) are derived and recomputable. *(Phase 4.)* |

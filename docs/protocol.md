@@ -1,6 +1,6 @@
-# Bot Protocol — version 1
+# Cogling Protocol — version 1
 
-Bots connect to the game server over a **WebSocket** and exchange **JSON text
+Coglings connect to the game server over a **WebSocket** and exchange **JSON text
 frames**. Each frame holds one message object with a `"type"` field. The
 protocol is the same in standalone and hosted mode. Hosted mode additionally
 requires an `api_key` in `hello`.
@@ -8,26 +8,26 @@ requires an `api_key` in `hello`.
 - Endpoint: `ws://<host>:<port>/ws` (standalone default `ws://127.0.0.1:7878/ws`)
 - Machine-readable schema: [`protocol.schema.json`](protocol.schema.json)
   (generated from the Rust types; a test fails if it drifts)
-- Reference clients: Rust [`crates/bot-sdk`](../crates/bot-sdk), Python
+- Reference clients: Rust [`crates/sdk`](../crates/sdk), Python
   [`clients/python`](../clients/python)
 
 ## Principles
 
-- **The server is authoritative.** Bots send *actions*, the decisions a human
+- **The server is authoritative.** Coglings send *actions*, the decisions a human
   player could make. They never send state changes.
-- **Observations are self-contained.** Every `decide` carries the bot's full
-  player-specific view, so bots never need to track deltas. Views never contain
+- **Observations are self-contained.** Every `decide` carries the cogling's full
+  player-specific view, so coglings never need to track deltas. Views never contain
   information the seat is not entitled to.
 - **One connection, one game at a time.** Games are never multiplexed over a
   connection. After `game_over` the connection may queue or join again. Run
-  several bot processes to play several games at once.
+  several cogling processes to play several games at once.
 - **Forward compatibility.** Unknown *fields* are ignored. Unknown message
   *types* are rejected with `error: malformed`.
 
 ## Lifecycle
 
 ```
-bot                                   server
+cogling                                   server
  │── hello ─────────────────────────────▶│
  │◀───────────────────────────── welcome ─│
  │── queue {game} ──────────────────────▶│   or: join {game_id} (lobby)
@@ -41,12 +41,12 @@ bot                                   server
  │── queue … (next game) or close         │
 ```
 
-## Messages: bot → server
+## Messages: cogling → server
 
 | type | fields | notes |
 |---|---|---|
-| `hello` | `protocol` (must be `1`), `bot: {name, version?}`, `api_key?` | Must be the first message, within 10 s. `name`: 1–64 chars, no control characters or surrounding whitespace. `version`: 1–32 chars from `[A-Za-z0-9.+_-]`. |
-| `queue` | `game`, `seats?`, `config?` | Quick-match. Bots are matched only with bots asking for the same game, seat count and *canonical* config. Seats are assigned randomly. |
+| `hello` | `protocol` (must be `1`), `cogling: {name, version?}`, `api_key?` | Must be the first message, within 10 s. `name`: 1–64 chars, no control characters or surrounding whitespace. `version`: 1–32 chars from `[A-Za-z0-9.+_-]`. |
+| `queue` | `game`, `seats?`, `config?` | Quick-match. Coglings are matched only with coglings asking for the same game, seat count and *canonical* config. Seats are assigned randomly. |
 | `leave_queue` | — | |
 | `create_game` | `game`, `seats?`, `config?`, `think_time_ms?`, `observation_mode?` | Creates a lobby. Reply: `game_created {game_id}`. Does not join it. |
 | `join` | `game_id` | Takes the next free seat in a lobby (seats are filled in join order). The game starts when full. |
@@ -54,7 +54,7 @@ bot                                   server
 | `reconnect` | `game_id`, `resume_token` | Reclaims your seat after a disconnect (see below). |
 | `ping` | `nonce?` | Reply: `pong {nonce}`. |
 
-## Messages: server → bot
+## Messages: server → cogling
 
 | type | fields | notes |
 |---|---|---|
@@ -62,7 +62,7 @@ bot                                   server
 | `queued` | `game` | |
 | `game_created` | `game_id` | |
 | `joined` | `game_id`, `seats_filled`, `seats_total` | Sent to everyone in the lobby on each join. |
-| `game_start` | `game_id`, `game`, `engine_version`, `ruleset`, `config`, `seat`, `players: [{seat, bot}]`, `resume_token`, `observation_mode`, `think_time_ms` | `config` is the canonical config in effect. Keep `resume_token` secret. |
+| `game_start` | `game_id`, `game`, `engine_version`, `ruleset`, `config`, `seat`, `players: [{seat, cogling}]`, `resume_token`, `observation_mode`, `think_time_ms` | `config` is the canonical config in effect. Keep `resume_token` secret. |
 | `decide` | `game_id`, `decision_id`, `remaining_ms`, `observation`, `legal_actions?` | Your turn. `legal_actions` only in `state_and_legal` mode. |
 | `action_accepted` | `game_id`, `decision_id` | |
 | `action_rejected` | `game_id`, `decision_id`, `code`, `message`, `remaining_ms` | Retry with the same `decision_id` while time remains. |
@@ -159,7 +159,7 @@ Error codes: `protocol_version`, `malformed`, `unexpected_message`,
 ## Example session
 
 ```json
-→ {"type":"hello","protocol":1,"bot":{"name":"Strategist","version":"2.3.1"}}
+→ {"type":"hello","protocol":1,"cogling":{"name":"Strategist","version":"2.3.1"}}
 ← {"type":"welcome","protocol":1,"server_version":"0.1.0","limits":{"max_message_bytes":65536,"max_messages_per_second":100}}
 → {"type":"queue","game":"tictactoe"}
 ← {"type":"queued","game":"tictactoe"}
@@ -174,5 +174,5 @@ Error codes: `protocol_version`, `malformed`, `unexpected_message`,
 ## Versioning
 
 The `protocol` number changes only for incompatible changes. New optional
-fields and new message types that older bots never receive are compatible
+fields and new message types that older coglings never receive are compatible
 additions. Hosted-mode messages such as `join_competition` will be added that way.

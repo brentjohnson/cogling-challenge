@@ -1,11 +1,11 @@
-"""Minimal, dependency-free Python client for the ogap bot protocol (v1).
+"""Minimal, dependency-free Python client for the Cogling protocol (v1).
 
 Only the standard library is used, including a small RFC 6455 WebSocket
-client (plain ``ws://`` only), so the sample bots run anywhere Python 3.9+
-runs. Real bots may prefer a full WebSocket library such as ``websockets``;
+client (plain ``ws://`` only), so the sample coglings run anywhere Python 3.9+
+runs. Real coglings may prefer a full WebSocket library such as ``websockets``;
 the protocol itself is just JSON text frames (see ``docs/protocol.md``).
 
-Write a bot by subclassing :class:`Bot` and implementing :meth:`Bot.decide`,
+Write a cogling by subclassing :class:`Cogling` and implementing :meth:`Cogling.decide`,
 then call :func:`run`.
 """
 
@@ -27,7 +27,7 @@ PROTOCOL_VERSION = 1
 _WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 _OP_CONT, _OP_TEXT, _OP_BINARY, _OP_CLOSE, _OP_PING, _OP_PONG = 0x0, 0x1, 0x2, 0x8, 0x9, 0xA
 
-log = logging.getLogger("ogap")
+log = logging.getLogger("cogling")
 
 
 class ProtocolError(Exception):
@@ -159,8 +159,8 @@ class GameInfo:
     players: list = field(default_factory=list)
 
 
-class Bot:
-    """Base class for bots. Override :meth:`decide`; the hooks are optional."""
+class Cogling:
+    """Base class for coglings. Override :meth:`decide`; the hooks are optional."""
 
     def on_game_start(self, info: GameInfo) -> None:
         """Called when a game starts or resumes."""
@@ -182,7 +182,7 @@ _BLOCKING_ERRORS = {"unknown_game", "no_such_game", "game_full", "invalid_config
 
 
 def run(
-    bot: Bot,
+    cogling: Cogling,
     url: str,
     name: str,
     version: Optional[str] = None,
@@ -199,9 +199,9 @@ def run(
     if (game is None) == (join is None):
         raise ValueError("pass exactly one of game= (quick-match) or join= (lobby id)")
     ws = WebSocket(url)
-    hello = {"type": "hello", "protocol": PROTOCOL_VERSION, "bot": {"name": name}}
+    hello = {"type": "hello", "protocol": PROTOCOL_VERSION, "cogling": {"name": name}}
     if version:
-        hello["bot"]["version"] = version
+        hello["cogling"]["version"] = version
     if api_key:
         hello["api_key"] = api_key
     ws.send_text(json.dumps(hello))
@@ -229,7 +229,7 @@ def run(
                 kind = msg.get("type")
                 if kind == "game_start":
                     seat = msg["seat"]
-                    bot.on_game_start(
+                    cogling.on_game_start(
                         GameInfo(
                             game_id=msg["game_id"],
                             game=msg["game"],
@@ -247,14 +247,14 @@ def run(
                         observation=msg["observation"],
                         legal_actions=msg.get("legal_actions"),
                     )
-                    _act(ws, pending, bot.decide(pending))
+                    _act(ws, pending, cogling.decide(pending))
                 elif kind == "action_rejected":
                     if pending and pending.decision_id == msg["decision_id"]:
-                        retry = bot.on_rejected(pending, msg["code"], msg["message"])
+                        retry = cogling.on_rejected(pending, msg["code"], msg["message"])
                         if retry is not None:
                             _act(ws, pending, retry)
                 elif kind == "game_over":
-                    bot.on_game_over(msg["result"])
+                    cogling.on_game_over(msg["result"])
                     if seat is None:
                         raise ProtocolError(f"lobby ended before the game started: {msg['result']}")
                     results.append({"game_id": msg["game_id"], "seat": seat, "result": msg["result"]})
@@ -285,7 +285,7 @@ def _act(ws: WebSocket, decision: Decision, action: Any) -> None:
 
 
 def main_args(description: str):
-    """Shared command-line arguments for the sample bots."""
+    """Shared command-line arguments for the sample coglings."""
     import argparse
 
     parser = argparse.ArgumentParser(description=description)

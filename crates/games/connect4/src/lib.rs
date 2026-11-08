@@ -1,4 +1,4 @@
-//! Connect Four for the Open Game Agent Platform.
+//! Connect Four for Cogling Challenge.
 //!
 //! Standard rules: two seats take turns dropping a disc into a column; the
 //! disc falls to the lowest empty row. Four in a row horizontally,
@@ -14,7 +14,7 @@
 
 pub mod agents;
 
-use ogap_game_core::{
+use cogling_game_core::{
     ActiveSeats, ConfigError, Game, GameInfo, IllegalAction, Outcome, Seat, SeatCount, SeatRange,
     Setup, Status,
 };
@@ -349,7 +349,7 @@ impl Game for ConnectFour {
 
 #[cfg(test)]
 mod tests {
-    use ogap_game_core::{Seed, conformance};
+    use cogling_game_core::{Seed, conformance};
     use proptest::prelude::*;
     use serde_json::json;
 
