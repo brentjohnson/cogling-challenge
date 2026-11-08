@@ -76,3 +76,7 @@ python3 clients/python/rules_cogling.py --join "$id"
 (cd clients/python && python3 -m unittest -v)
 UPDATE_SCHEMA=1 cargo test -p cogling-protocol   # regenerate docs/protocol.schema.json
 ```
+
+## License
+
+[MIT](LICENSE)
