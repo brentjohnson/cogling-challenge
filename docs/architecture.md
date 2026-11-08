@@ -32,7 +32,7 @@ games/* ──▶ game-core ◀── protocol ◀── eventlog ◀── sim
 | A1 | **Forfeit in 3+ player games ends the game.** The forfeiter ranks last. The others tie (default) or are ranked by `Game::provisional_ranks` (`ForfeitPolicy::Provisional`). Engines never need to remove a seat mid-game. |
 | A2 | Think time is measured by the server from `decide` sent to action received, so network latency counts. |
 | A3 | A disconnected seat keeps its clock running. It forfeits at whichever comes first: the decision deadline or the end of the reconnect grace period. |
-| A4 | Large action spaces (e.g. Power Grid builds) are modelled as sequences of small atomic actions (`build X` … `done`), keeping legal-action lists small. |
+| A4 | Compound turns with large action spaces (e.g. placing or buying several things in one turn) are modelled as sequences of small atomic actions (`place X` … `done`), keeping legal-action lists small. |
 | A5 | `Status::ToAct` is a non-empty seat set, which permits simultaneous moves. Such engines must resolve them order-independently. |
 | A6 | One connection plays one game at a time, and may play several games one after another. |
 | A7 | **Hosted competitions use a pull pool**: idle connected bot instances are formed into tables, prioritising bots with the fewest games played toward a per-bot target, then the least-seen opponent pairs and seats. *(Phase 4.)* |
@@ -40,7 +40,6 @@ games/* ──▶ game-core ◀── protocol ◀── eventlog ◀── sim
 | A9 | Full logs are served only after a game ends. Spectators get public views. |
 | A10 | Raw ranks and game-specific scores are stored. Ratings (Weng-Lin/OpenSkill style) are derived and recomputable. *(Phase 4.)* |
 | A11 | Standalone mode supports lobbies (`create_game` + `join`) and quick-match queues. |
-| A12 | Power Grid needs a publisher-permission and naming decision before Phase 6. |
 
 ## Deliberate deviations from the initial plan
 
@@ -65,4 +64,6 @@ games/* ──▶ game-core ◀── protocol ◀── eventlog ◀── sim
   ratings. The server already exposes the seams these need: `LogStore`, the
   `Hub` matchmaking entry points, and `ServerConfig` limits.
 - **Phase 5:** log export for ML, version comparison tooling.
-- **Phase 6:** Power Grid.
+- **Phase 6:** more games, including multi-player games with hidden
+  information and multi-step turns. Each is a pure engine crate that passes
+  the conformance kit; the platform needs no changes per game.

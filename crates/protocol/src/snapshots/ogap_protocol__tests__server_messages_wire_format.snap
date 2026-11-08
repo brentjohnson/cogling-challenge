@@ -37,7 +37,7 @@ expression: frames
     "players": [
       {
         "bot": {
-          "name": "Power Grid Strategist",
+          "name": "Strategist",
           "version": "2.3.1"
         },
         "seat": 0

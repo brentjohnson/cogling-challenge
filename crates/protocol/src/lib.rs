@@ -384,7 +384,7 @@ mod tests {
     }
 
     fn bot() -> BotInfo {
-        BotInfo::new("Power Grid Strategist", Some("2.3.1")).unwrap()
+        BotInfo::new("Strategist", Some("2.3.1")).unwrap()
     }
 
     fn client_examples() -> Vec<ClientMessage> {

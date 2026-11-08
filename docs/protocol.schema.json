@@ -30,7 +30,7 @@
         "type": "object"
       },
       "BotName": {
-        "description": "A self-declared bot name, e.g. `\"Power Grid Strategist\"`.",
+        "description": "A self-declared bot name, e.g. `\"Strategist\"`.",
         "type": "string"
       },
       "BotVersion": {
@@ -332,7 +332,7 @@
         "type": "object"
       },
       "BotName": {
-        "description": "A self-declared bot name, e.g. `\"Power Grid Strategist\"`.",
+        "description": "A self-declared bot name, e.g. `\"Strategist\"`.",
         "type": "string"
       },
       "BotVersion": {

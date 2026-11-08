@@ -149,7 +149,7 @@ pub enum BotInfoError {
     InvalidVersion,
 }
 
-/// A self-declared bot name, e.g. `"Power Grid Strategist"`.
+/// A self-declared bot name, e.g. `"Strategist"`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(try_from = "String", into = "String")]
 pub struct BotName(String);
@@ -288,7 +288,7 @@ mod tests {
 
     #[test]
     fn bot_name_validation() {
-        assert!(BotName::new("Power Grid Strategist").is_ok());
+        assert!(BotName::new("Strategist").is_ok());
         assert!(BotName::new("ünïcödé ✓").is_ok());
         assert!(BotName::new("").is_err());
         assert!(BotName::new(" padded").is_err());

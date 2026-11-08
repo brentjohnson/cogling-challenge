@@ -5,7 +5,7 @@ expression: frames
 [
   {
     "bot": {
-      "name": "Power Grid Strategist",
+      "name": "Strategist",
       "version": "2.3.1"
     },
     "protocol": 1,
